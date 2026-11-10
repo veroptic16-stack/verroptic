@@ -1,4 +1,6 @@
 # Phase de développement : aucune indexation.
 # À remplacer au lancement (Phase 3) par la version publique + sitemap.
+# La ligne « Disallow: /admin » devra être CONSERVÉE au lancement.
 User-agent: *
 Disallow: /
+Disallow: /admin
