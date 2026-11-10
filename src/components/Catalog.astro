@@ -2,7 +2,7 @@
 // Grille produits + filtres (côté navigateur, sans rechargement ; l'URL garde les filtres).
 import ProductCard from './ProductCard.astro';
 import Icon from './Icon.astro';
-import { GENDER_LABELS, capitalize, type Product } from '../lib/content';
+import { GENDER_LABELS, GENDER_ORDER, capitalize, type Product } from '../lib/content';
 import { whatsappLink } from '../lib/links';
 
 interface Props {
@@ -14,9 +14,12 @@ const { products, whatsapp, showCategoryFilter = false } = Astro.props;
 
 const distinct = (values: (string | null | undefined)[]) => [...new Set(values.filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, 'fr'));
 
+// Filtre principal, toujours visible : pour qui.
+const genders = [{ value: '', label: 'Tous' }, ...GENDER_ORDER.map((g) => ({ value: g, label: GENDER_LABELS[g] }))];
+
+// Filtres secondaires (affichés seulement s'ils permettent de choisir entre au moins 2 valeurs).
 const filters = [
   showCategoryFilter && { key: 'category', label: 'Catégorie', options: distinct(products.map((p) => p.category?.slug)).map((v) => ({ value: v, label: products.find((p) => p.category?.slug === v)!.category!.name })) },
-  { key: 'gender', label: 'Pour', options: distinct(products.map((p) => p.gender)).map((v) => ({ value: v, label: GENDER_LABELS[v] || capitalize(v) })) },
   { key: 'shape', label: 'Forme', options: distinct(products.map((p) => p.frame_shape)).map((v) => ({ value: v, label: capitalize(v) })) },
   { key: 'material', label: 'Matière', options: distinct(products.map((p) => p.material)).map((v) => ({ value: v, label: capitalize(v) })) },
   { key: 'brand', label: 'Marque', options: distinct(products.map((p) => p.brand?.slug)).map((v) => ({ value: v, label: products.find((p) => p.brand?.slug === v)!.brand!.name })) },
@@ -33,21 +36,27 @@ const filters = [
   </div>
 ) : (
   <div data-catalog>
+    <div class="gender-filter" role="group" aria-label="Filtrer par public" data-gender-filter>
+      {genders.map((g) => (
+        <button type="button" class="gender-chip" aria-pressed={g.value === '' ? 'true' : 'false'} data-value={g.value}>{g.label}</button>
+      ))}
+    </div>
+
     {filters.length > 0 && (
       <details class="filters-wrap" open data-filters-wrap>
-      <summary class="filters-summary">Filtrer <span data-active-count></span></summary>
-      <form class="filters" aria-label="Filtrer les modèles" data-filters>
-        {filters.map((f) => (
-          <label class="filter">
-            <span>{f.label}</span>
-            <select name={f.key}>
-              <option value="">Tous</option>
-              {f.options.map((o) => <option value={o.value}>{o.label}</option>)}
-            </select>
-          </label>
-        ))}
-        <button type="reset" class="filter-reset">Réinitialiser</button>
-      </form>
+        <summary class="filters-summary">Plus de filtres <span data-active-count></span></summary>
+        <form class="filters" aria-label="Filtrer les modèles" data-filters>
+          {filters.map((f) => (
+            <label class="filter">
+              <span>{f.label}</span>
+              <select name={f.key}>
+                <option value="">Tous</option>
+                {f.options.map((o) => <option value={o.value}>{o.label}</option>)}
+              </select>
+            </label>
+          ))}
+          <button type="reset" class="filter-reset">Réinitialiser</button>
+        </form>
       </details>
     )}
     <p class="result-count muted" aria-live="polite" data-count>{products.length} modèle{products.length > 1 ? 's' : ''}</p>
@@ -60,46 +69,70 @@ const filters = [
 
 <script>
   const root = document.querySelector<HTMLElement>('[data-catalog]');
-  const form = root?.querySelector<HTMLFormElement>('[data-filters]');
-  if (root && form) {
+  if (root) {
     const cards = [...root.querySelectorAll<HTMLElement>('[data-product]')];
     const count = root.querySelector<HTMLElement>('[data-count]')!;
     const empty = root.querySelector<HTMLElement>('[data-empty]')!;
-    const selects = [...form.querySelectorAll<HTMLSelectElement>('select')];
+    const chips = [...root.querySelectorAll<HTMLButtonElement>('.gender-chip')];
+    const form = root.querySelector<HTMLFormElement>('[data-filters]');
+    const selects = [...(form?.querySelectorAll<HTMLSelectElement>('select') || [])];
     const activeCount = root.querySelector<HTMLElement>('[data-active-count]');
+    let gender = '';
 
-    // Sur téléphone, les filtres sont repliés derrière un bouton « Filtrer ».
+    // Sur téléphone, les filtres secondaires sont repliés.
     const wrap = root.querySelector<HTMLDetailsElement>('[data-filters-wrap]');
     if (wrap && matchMedia('(max-width: 760px)').matches) wrap.open = false;
+
+    // Un modèle unisexe apparaît aussi dans « Femme » et « Homme ».
+    const matchesGender = (value: string | undefined) =>
+      !gender || value === gender || (value === 'mixte' && (gender === 'femme' || gender === 'homme'));
 
     const apply = () => {
       const active = selects.filter((s) => s.value);
       let visible = 0;
       cards.forEach((card) => {
-        const show = active.every((s) => card.dataset[s.name] === s.value);
+        const show = matchesGender(card.dataset.gender) && active.every((s) => card.dataset[s.name] === s.value);
         card.hidden = !show;
         if (show) visible++;
       });
+      chips.forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.value === gender)));
       count.textContent = `${visible} modèle${visible > 1 ? 's' : ''}`;
       if (activeCount) activeCount.textContent = active.length ? `(${active.length})` : '';
       empty.hidden = visible > 0;
       const params = new URLSearchParams(active.map((s) => [s.name, s.value]));
+      if (gender) params.set('pour', gender);
       history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}`);
     };
 
     const params = new URLSearchParams(location.search);
+    const fromUrl = params.get('pour') || params.get('gender') || '';
+    if (chips.some((c) => c.dataset.value === fromUrl)) gender = fromUrl;
     selects.forEach((s) => {
       const v = params.get(s.name);
       if (v && [...s.options].some((o) => o.value === v)) s.value = v;
     });
-    form.addEventListener('change', apply);
-    form.addEventListener('reset', () => setTimeout(apply));
-    root.querySelector('[data-clear]')?.addEventListener('click', () => form.reset());
+
+    chips.forEach((c) => c.addEventListener('click', () => { gender = c.dataset.value || ''; apply(); }));
+    form?.addEventListener('change', apply);
+    form?.addEventListener('reset', () => setTimeout(apply));
+    root.querySelector('[data-clear]')?.addEventListener('click', () => {
+      gender = '';
+      form ? form.reset() : apply();
+    });
     apply();
   }
 </script>
 
 <style is:global>
+  .gender-filter { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.5rem; }
+  .gender-chip {
+    min-height: 44px; padding: .55em 1.4em; border: 1px solid var(--line); border-radius: 999px; background: var(--white);
+    font-size: .8rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; cursor: pointer;
+    transition: background .25s var(--ease), color .25s var(--ease), border-color .25s var(--ease);
+  }
+  .gender-chip:hover { border-color: var(--ink); }
+  .gender-chip[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: #fff; }
+
   .filters { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem 1rem; padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--line); }
   .filter { display: grid; gap: .35rem; min-width: 150px; flex: 1 1 150px; max-width: 220px; }
   .filter span { font-size: .7rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
@@ -113,6 +146,10 @@ const filters = [
   .empty-filter { padding: 3rem 0; text-align: center; color: var(--ink-soft); }
   .filters-summary { display: none; }
   @media (max-width: 760px) {
+    /* Les 5 boutons tiennent sur une ligne qui défile au doigt */
+    .gender-filter { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); margin-bottom: 1rem; }
+    .gender-filter::-webkit-scrollbar { display: none; }
+    .gender-chip { flex: none; padding-inline: 1.1em; font-size: .74rem; }
     .filters-wrap { margin-bottom: 1.2rem; border-block: 1px solid var(--line); }
     .filters-summary {
       display: flex; align-items: center; justify-content: space-between; padding: .9rem 0; cursor: pointer; list-style: none;

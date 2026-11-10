@@ -53,7 +53,7 @@ export const collections: Record<string, Collection> = {
       { name: 'handle', label: 'Identifiant d’URL', type: 'slug', from: 'title', help: 'Rempli automatiquement. Minuscules, chiffres et tirets.' },
       { name: 'category_id', label: 'Catégorie', type: 'select', options: fromTable('categories') },
       { name: 'brand_id', label: 'Marque', type: 'select', options: fromTable('brands') },
-      { name: 'gender', label: 'Pour', type: 'select', options: [{ value: '', label: '—' }, { value: 'femme', label: 'Femme' }, { value: 'homme', label: 'Homme' }, { value: 'mixte', label: 'Mixte' }, { value: 'enfant', label: 'Enfant' }] },
+      { name: 'gender', label: 'Pour', type: 'select', options: [{ value: '', label: '—' }, { value: 'femme', label: 'Femme' }, { value: 'homme', label: 'Homme' }, { value: 'mixte', label: 'Unisexe' }, { value: 'enfant', label: 'Enfant' }] },
       { name: 'frame_shape', label: 'Forme', type: 'select', options: choices('Ronde', 'Ovale', 'Carrée', 'Rectangulaire', 'Papillon', 'Aviateur', 'Pantos', 'Géométrique', 'Masque') },
       { name: 'material', label: 'Matière', type: 'select', options: choices('Acétate', 'Métal', 'Titane', 'Mixte', 'Injecté') },
       { name: 'sku', label: 'Référence', type: 'text', placeholder: 'ex. RB2140-901' },

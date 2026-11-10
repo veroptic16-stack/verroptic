@@ -123,6 +123,7 @@ export async function getArticles(): Promise<Article[]> {
   return articles.length || !DEMO ? articles : demoArticles;
 }
 
-export const GENDER_LABELS: Record<string, string> = { femme: 'Femme', homme: 'Homme', mixte: 'Mixte', enfant: 'Enfant' };
+export const GENDER_LABELS: Record<string, string> = { femme: 'Femme', homme: 'Homme', mixte: 'Unisexe', enfant: 'Enfant' };
+export const GENDER_ORDER = ['femme', 'homme', 'mixte', 'enfant'] as const;
 
 export const capitalize = (s: string | null | undefined) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');

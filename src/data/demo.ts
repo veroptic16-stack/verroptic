@@ -8,7 +8,7 @@ export const demoProducts: Product[] = [
   { ...base, id: 'd2', handle: 'demo-ronde', title: 'Ronde Écaille', gender: 'femme', frame_shape: 'ronde', material: 'acétate', is_new: false, category: { slug: 'optique', name: 'Optique' }, brand: { slug: 'demo', name: 'Maison Démo' }, variants: [{ id: 'v3', color_name: 'Écaille', color_hex: '#7a4a2a' }] },
   { ...base, id: 'd3', handle: 'demo-carree', title: 'Carrée Noire', gender: 'homme', frame_shape: 'carrée', material: 'acétate', is_new: true, category: { slug: 'optique', name: 'Optique' }, brand: null, variants: [] },
   { ...base, id: 'd4', handle: 'demo-papillon', title: 'Papillon Rosé', gender: 'femme', frame_shape: 'papillon', material: 'acétate', is_new: false, category: { slug: 'solaire', name: 'Solaire' }, brand: null, variants: [{ id: 'v4', color_name: 'Rosé', color_hex: '#d9a3a8' }] },
-  { ...base, id: 'd5', handle: 'demo-clip', title: 'Clip-on Ovale', gender: 'mixte', frame_shape: 'ovale', material: 'titane', is_new: false, category: { slug: 'clip-on', name: 'Clip-on' }, brand: null, variants: [] },
+  { ...base, id: 'd5', handle: 'demo-clip', title: 'Clip-on Ovale', gender: 'enfant', frame_shape: 'ovale', material: 'titane', is_new: false, category: { slug: 'clip-on', name: 'Clip-on' }, brand: null, variants: [] },
 ];
 
 const article = (id: string, slug: string, title: string, excerpt: string, date: string) => ({
