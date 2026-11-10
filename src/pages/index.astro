@@ -326,7 +326,13 @@ const promises = [
   /* ── Mobile ── */
   @media (max-width: 860px) {
     .hero { padding-block: 28px 48px; }
-    .hero-visual { order: 0; min-height: 0; padding-top: 8px; }
+    /* Ordre mobile : texte → cercle des lunettes → boutons */
+    .hero-grid { gap: 0; }
+    .hero-text { display: contents; }
+    .hero-text > * { order: 1; }
+    .hero-text .lead { margin-bottom: 0; }
+    .hero-visual { order: 2; min-height: 0; padding-block: 28px; }
+    .hero-text .btn-row { order: 3; }
     .hero-disc { width: min(84%, 340px); }
     .hero-product { width: min(66%, 300px); }
     .hero-glasses { width: 48%; margin-block: 56px; }
