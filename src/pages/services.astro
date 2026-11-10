@@ -5,16 +5,18 @@ import Icon from '../components/Icon.astro';
 import { getServices, getSettings } from '../lib/content';
 import { renderMarkdown } from '../lib/markdown';
 import { whatsappLink } from '../lib/links';
+import { rdvLink } from '../lib/rdv';
 
 const [services, settings] = await Promise.all([getServices(), getSettings()]);
 const wa = whatsappLink(settings.whatsapp, `Bonjour VER'OPTIC, j'ai une question sur vos services : `);
+const pad = (n: number) => String(n).padStart(2, '0');
 ---
-<Base title="Services" description={`Les services de ${settings.name}, opticien à Casablanca : verres, lentilles, ajustement et conseil personnalisé.`}>
+<Base title="Services" description={`Les services de ${settings.name}, opticien à Casablanca : conseil, verres sur mesure, lentilles, solaires, ajustement et prise en charge.`}>
   <section class="page-head">
     <div class="container">
       <span class="eyebrow">Services</span>
       <h1>L’expertise <em>derrière chaque paire</em></h1>
-      <p class="lead">De l’essayage au choix des verres, nous vous accompagnons à chaque étape.</p>
+      <p class="lead">De l’essayage au choix des verres, nous vous accompagnons à chaque étape. <span class="hint-hover">Survolez une carte pour en savoir plus.</span><span class="hint-touch">Touchez une carte pour en savoir plus.</span></p>
     </div>
   </section>
 
@@ -30,21 +32,47 @@ const wa = whatsappLink(settings.whatsapp, `Bonjour VER'OPTIC, j'ai une question
           </div>
         </div>
       ) : (
-        <div class="service-list">
+        <ul class="flip-grid">
           {services.map((s, i) => (
-            <article class={`service-row reveal ${i % 2 ? 'flip' : ''}`} id={s.slug}>
-              <div class="frame service-media">
-                <Photo path={s.cover_path} alt="" width={640} sizes="(max-width: 860px) 100vw, 45vw" />
+            <li class="flip-card reveal" id={s.slug} data-flip>
+              <div class="flip-inner">
+                <!-- Recto -->
+                <div class="flip-face flip-front">
+                  <div class={`flip-media ${s.cover_path ? '' : 'flip-typo'}`}>
+                    {s.cover_path ? (
+                      <Photo path={s.cover_path} alt="" width={480} sizes="(max-width: 640px) 92vw, (max-width: 1080px) 46vw, 380px" />
+                    ) : (
+                      <span class="flip-num" aria-hidden="true">{pad(i + 1)}</span>
+                    )}
+                  </div>
+                  <div class="flip-front-text">
+                    <h2>{s.title}</h2>
+                    {s.summary && <p>{s.summary}</p>}
+                    <button type="button" class="flip-toggle" aria-expanded="false" aria-controls={`back-${s.slug}`} data-flip-open>
+                      En savoir plus <span aria-hidden="true">↻</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Verso -->
+                <div class="flip-face flip-back" id={`back-${s.slug}`}>
+                  <div class="flip-back-head">
+                    <span class="flip-back-num">{pad(i + 1)}</span>
+                    <h3>{s.title}</h3>
+                  </div>
+                  <div class="flip-back-body">
+                    {s.body ? <div class="prose-card" set:html={renderMarkdown(s.body)} /> : s.summary && <p>{s.summary}</p>}
+                  </div>
+                  <div class="flip-actions">
+                    <a class="btn btn-light" href={rdvLink(s)}><Icon name="calendar" /> Réserver en boutique</a>
+                    <a class="btn btn-wa" href={whatsappLink(settings.whatsapp, `Bonjour VER'OPTIC, j'ai une question sur le service « ${s.title} » : `)} target="_blank" rel="noopener"><Icon name="whatsapp" /> Une question ?</a>
+                    <button type="button" class="flip-back-btn" data-flip-close>← Retour</button>
+                  </div>
+                </div>
               </div>
-              <div>
-                <span class="eyebrow">0{i + 1}</span>
-                <h2>{s.title}</h2>
-                {s.summary && <p class="lead">{s.summary}</p>}
-                {s.body && <div class="prose" set:html={renderMarkdown(s.body)} />}
-              </div>
-            </article>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   </section>
@@ -63,15 +91,102 @@ const wa = whatsappLink(settings.whatsapp, `Bonjour VER'OPTIC, j'ai une question
   </section>
 </Base>
 
+<script>
+  // Retournement au toucher / au clavier (le survol est géré en CSS sur les écrans qui le permettent).
+  document.querySelectorAll<HTMLElement>('[data-flip]').forEach((card) => {
+    const open = card.querySelector<HTMLButtonElement>('[data-flip-open]')!;
+    const close = card.querySelector<HTMLButtonElement>('[data-flip-close]')!;
+    const set = (flipped: boolean) => {
+      card.classList.toggle('flipped', flipped);
+      open.setAttribute('aria-expanded', String(flipped));
+    };
+    open.addEventListener('click', () => {
+      document.querySelectorAll('[data-flip].flipped').forEach((c) => c !== card && c.classList.remove('flipped'));
+      set(true);
+      close.focus({ preventScroll: true });
+    });
+    close.addEventListener('click', () => {
+      set(false);
+      open.focus({ preventScroll: true });
+    });
+  });
+
+  // Lien direct vers un service (/services/#lentilles-de-contact) : la carte s'ouvre.
+  const target = location.hash ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
+  if (target?.hasAttribute('data-flip')) target.classList.add('flipped');
+</script>
+
 <style is:global>
-  .service-list { display: grid; gap: clamp(48px, 7vw, 112px); }
-  .service-row { display: grid; grid-template-columns: 1fr 1.1fr; gap: clamp(28px, 5vw, 80px); align-items: center; scroll-margin-top: 110px; }
-  .service-row.flip .service-media { order: 2; }
-  .service-media { aspect-ratio: 4 / 3; background: var(--mist); }
-  .service-row h2 { margin-bottom: 1rem; }
-  .service-row .lead { margin-bottom: 1.2rem; }
-  @media (max-width: 860px) {
-    .service-row { grid-template-columns: 1fr; }
-    .service-row.flip .service-media { order: 0; }
+  .hint-touch { display: none; }
+  @media (hover: none) { .hint-hover { display: none; } .hint-touch { display: inline; } }
+
+  .flip-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2vw, 28px); }
+  @media (max-width: 1080px) { .flip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .flip-grid { grid-template-columns: 1fr; } }
+
+  .flip-card { perspective: 1800px; scroll-margin-top: 110px; }
+  .flip-inner { position: relative; height: 540px; transform-style: preserve-3d; transition: transform .8s var(--ease); }
+  .flip-face {
+    position: absolute; inset: 0; overflow: hidden;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    border: 1px solid var(--line);
+  }
+
+  /* Recto */
+  .flip-front { background: var(--white); display: grid; grid-template-rows: 46% 1fr; }
+  .flip-media { overflow: hidden; }
+  .flip-media img { width: 100%; height: 100%; object-fit: cover; }
+  .flip-typo { background: linear-gradient(135deg, var(--mist), #d7e6f0); display: grid; place-items: center; position: relative; }
+  .flip-typo::after { content: ''; position: absolute; width: 62%; aspect-ratio: 1; border-radius: 50%; border: 1px solid rgb(23 85 127 / .18); }
+  .flip-num { font-family: var(--serif); font-style: italic; font-size: clamp(4rem, 7vw, 6rem); color: var(--blue-deep); opacity: .6; }
+  .flip-front-text { padding: 1.6rem 1.6rem 1.4rem; display: grid; grid-template-rows: auto 1fr auto; gap: .7rem; }
+  .flip-front-text h2 { font-size: clamp(1.6rem, 2.2vw, 1.9rem); }
+  .flip-front-text p { margin: 0; color: var(--ink-soft); font-size: .95rem; }
+  .flip-toggle {
+    justify-self: start; display: inline-flex; gap: .5rem; align-items: center; padding: 0 0 2px; border: 0; border-bottom: 1px solid currentColor;
+    background: none; cursor: pointer; font-size: .75rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink);
+  }
+
+  /* Verso */
+  .flip-back {
+    transform: rotateY(180deg); background: var(--ink); color: #e3eaf0; border-color: var(--ink);
+    display: grid; grid-template-rows: auto 1fr auto; padding: 1.6rem;
+    pointer-events: none; /* inactif tant que la carte n'est pas retournée */
+  }
+  .flip-back-head { display: flex; align-items: baseline; gap: .9rem; padding-bottom: 1rem; border-bottom: 1px solid rgb(255 255 255 / .14); }
+  .flip-back-num { font-family: var(--serif); font-style: italic; font-size: 1.4rem; color: #7fc0e6; }
+  .flip-back h3 { color: #fff; font-size: 1.55rem; }
+  .flip-back-body { overflow-y: auto; padding: 1rem .4rem 1rem 0; margin-right: -.4rem; scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / .25) transparent; }
+  .prose-card { font-size: .9rem; line-height: 1.6; }
+  .prose-card p { margin: 0 0 .8em; }
+  .prose-card h2 { font-family: var(--sans); font-size: .7rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: #7fc0e6; margin: 1.1em 0 .5em; }
+  .prose-card ul { margin: 0 0 .8em; padding-left: 1.1em; }
+  .prose-card li { margin-bottom: .3em; }
+  .prose-card li::marker { color: #7fc0e6; }
+  .prose-card strong { color: #fff; font-weight: 600; }
+  .flip-actions { display: grid; grid-template-columns: 1fr; gap: .45rem; padding-top: 1rem; border-top: 1px solid rgb(255 255 255 / .14); }
+  .flip-actions .btn { min-height: 44px; padding: .55em .8em; font-size: .7rem; letter-spacing: .12em; }
+  .flip-actions .btn-light:hover { background: transparent; color: #fff; }
+  .flip-back-btn { display: none; grid-column: 1 / -1; justify-self: center; margin-top: .3rem; padding: .4rem; border: 0; background: none; color: #aebbc6; cursor: pointer; font-size: .8rem; }
+
+  /* Retournement : survol (souris), focus clavier, ou toucher (classe .flipped) */
+  .flip-card.flipped .flip-inner { transform: rotateY(180deg); }
+  .flip-card.flipped .flip-back { pointer-events: auto; }
+  @media (hover: hover) {
+    .flip-card:hover .flip-inner, .flip-card:focus-within .flip-inner { transform: rotateY(180deg); }
+    .flip-card:hover .flip-back, .flip-card:focus-within .flip-back { pointer-events: auto; }
+  }
+  @media (hover: none) { .flip-back-btn { display: block; } }
+
+  /* Mouvement réduit : fondu au lieu de la rotation */
+  @media (prefers-reduced-motion: reduce) {
+    .flip-inner, .flip-card:hover .flip-inner, .flip-card:focus-within .flip-inner, .flip-card.flipped .flip-inner { transform: none !important; }
+    .flip-back { transform: none; opacity: 0; transition: opacity .3s; }
+    .flip-card:hover .flip-back, .flip-card:focus-within .flip-back, .flip-card.flipped .flip-back { opacity: 1; }
+  }
+
+  @media (max-width: 640px) {
+    .flip-inner { height: 500px; }
+    .flip-back { padding: 1.3rem; }
   }
 </style>

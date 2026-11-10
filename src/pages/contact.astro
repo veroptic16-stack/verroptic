@@ -4,13 +4,14 @@ import Icon from '../components/Icon.astro';
 import { getSettings, getProducts } from '../lib/content';
 import { ensureHttps, whatsappLink, telLink, displayPhone } from '../lib/links';
 import { SUPABASE_URL, SUPABASE_KEY } from '../lib/supabase';
+import { RDV_REASONS } from '../lib/rdv';
 
 const [settings, products] = await Promise.all([getSettings(), getProducts()]);
 const wa = whatsappLink(settings.whatsapp, `Bonjour VER'OPTIC, `);
 const mapsUrl = ensureHttps(settings.google_maps_url);
 const models = products.map((p) => ({ handle: p.handle, label: [p.brand?.name, p.title].filter(Boolean).join(' ') }));
 
-const reasons = ['Essayage de montures', 'Examen de vue', 'Lentilles de contact', 'Ajustement ou réparation', 'Autre demande'];
+const reasons = RDV_REASONS;
 const slots = ['Matin', 'Après-midi', 'Fin de journée'];
 ---
 <Base title="Contact & rendez-vous" description={`Prenez rendez-vous chez ${settings.name} à Sidi Bernoussi, Casablanca : essayage, conseil, verres et lentilles. Adresse, horaires et WhatsApp.`}>
@@ -121,14 +122,22 @@ const slots = ['Matin', 'Après-midi', 'Fin de journée'];
   const errorBox = form.querySelector('[data-error]');
   const submit = form.querySelector('[data-submit]');
 
-  // Date minimale : aujourd'hui. Modèle pré-rempli depuis une fiche produit (?modele=…).
+  // Date minimale : aujourd'hui.
   const today = new Date();
   form.preferred_date.min = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-  const model = new URLSearchParams(location.search).get('modele');
-  if (model && form.product_handle && [...form.product_handle.options].some((o) => o.value === model)) {
+
+  // Pré-remplissage depuis une fiche produit (?modele=…) ou une carte service (?motif=…&service=…).
+  const params = new URLSearchParams(location.search);
+  const hasOption = (select, value) => select && [...select.options].some((o) => o.value === value);
+  const model = params.get('modele');
+  if (hasOption(form.product_handle, model)) {
     form.product_handle.value = model;
     form.reason.value = 'Essayage de montures';
   }
+  const motif = params.get('motif');
+  if (hasOption(form.reason, motif)) form.reason.value = motif;
+  const service = params.get('service');
+  if (service) form.message.value = `Service : ${service.slice(0, 100)}`;
 
   const fail = (message) => {
     errorBox.textContent = message;
