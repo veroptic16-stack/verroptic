@@ -34,6 +34,8 @@ const filters = [
 ) : (
   <div data-catalog>
     {filters.length > 0 && (
+      <details class="filters-wrap" open data-filters-wrap>
+      <summary class="filters-summary">Filtrer <span data-active-count></span></summary>
       <form class="filters" aria-label="Filtrer les modèles" data-filters>
         {filters.map((f) => (
           <label class="filter">
@@ -46,6 +48,7 @@ const filters = [
         ))}
         <button type="reset" class="filter-reset">Réinitialiser</button>
       </form>
+      </details>
     )}
     <p class="result-count muted" aria-live="polite" data-count>{products.length} modèle{products.length > 1 ? 's' : ''}</p>
     <div class="product-grid">
@@ -63,6 +66,11 @@ const filters = [
     const count = root.querySelector<HTMLElement>('[data-count]')!;
     const empty = root.querySelector<HTMLElement>('[data-empty]')!;
     const selects = [...form.querySelectorAll<HTMLSelectElement>('select')];
+    const activeCount = root.querySelector<HTMLElement>('[data-active-count]');
+
+    // Sur téléphone, les filtres sont repliés derrière un bouton « Filtrer ».
+    const wrap = root.querySelector<HTMLDetailsElement>('[data-filters-wrap]');
+    if (wrap && matchMedia('(max-width: 760px)').matches) wrap.open = false;
 
     const apply = () => {
       const active = selects.filter((s) => s.value);
@@ -73,6 +81,7 @@ const filters = [
         if (show) visible++;
       });
       count.textContent = `${visible} modèle${visible > 1 ? 's' : ''}`;
+      if (activeCount) activeCount.textContent = active.length ? `(${active.length})` : '';
       empty.hidden = visible > 0;
       const params = new URLSearchParams(active.map((s) => [s.name, s.value]));
       history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}`);
@@ -102,5 +111,18 @@ const filters = [
   .filter-reset { background: none; border: 0; padding: .6em 0; font-size: .8rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; text-decoration: underline; cursor: pointer; }
   .result-count { margin: 0 0 1.5rem; font-size: .9rem; }
   .empty-filter { padding: 3rem 0; text-align: center; color: var(--ink-soft); }
-  @media (max-width: 520px) { .filter { max-width: none; flex-basis: calc(50% - .5rem); min-width: 0; } }
+  .filters-summary { display: none; }
+  @media (max-width: 760px) {
+    .filters-wrap { margin-bottom: 1.2rem; border-block: 1px solid var(--line); }
+    .filters-summary {
+      display: flex; align-items: center; justify-content: space-between; padding: .9rem 0; cursor: pointer; list-style: none;
+      font-size: .78rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+    }
+    .filters-summary::-webkit-details-marker { display: none; }
+    .filters-summary::after { content: '+'; font-size: 1.3rem; font-weight: 400; }
+    .filters-wrap[open] .filters-summary::after { content: '−'; }
+    .filters { border-bottom: 0; margin-bottom: 0; padding-bottom: 1rem; }
+    .filter { max-width: none; flex-basis: calc(50% - .5rem); min-width: 0; }
+    .result-count { margin-bottom: 1rem; }
+  }
 </style>

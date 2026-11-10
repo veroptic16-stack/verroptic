@@ -13,6 +13,7 @@ interface Props {
   title?: string;
   description?: string;
   image?: string;
+  hideFab?: boolean; // pages qui ont leur propre barre d'actions mobile
 }
 
 const settings = await getSettings();
@@ -21,6 +22,7 @@ const {
   title,
   description = `${settings.name}, ${settings.tagline.toLowerCase()}. Montures optiques et solaires, verres et lentilles, conseil personnalisé à Sidi Bernoussi.`,
   image,
+  hideFab = false,
 } = Astro.props;
 
 const fullTitle = title ? `${title} | ${settings.name}` : `${settings.name} | ${settings.tagline}`;
@@ -87,8 +89,9 @@ const year = new Date().getFullYear();
         </nav>
         <div class="header-actions">
           <a class="btn" href="/contact/#rdv">Prendre rendez-vous</a>
+          <a class="icon-btn header-rdv" href="/contact/#rdv" aria-label="Prendre rendez-vous"><Icon name="calendar" /></a>
           <button class="icon-btn menu-toggle" type="button" aria-controls="menu" aria-expanded="false" aria-label="Ouvrir le menu" data-menu-toggle>
-            <Icon name="menu" />
+            <Icon name="menu" class="icon-open" /><Icon name="close" class="icon-close" />
           </button>
         </div>
       </div>
@@ -137,7 +140,7 @@ const year = new Date().getFullYear();
       </div>
     </footer>
 
-    <a class="wa-fab" href={wa} target="_blank" rel="noopener" aria-label="Écrire sur WhatsApp">
+    <a class={`wa-fab${hideFab ? ' wa-fab--desktop' : ''}`} href={wa} target="_blank" rel="noopener" aria-label="Écrire sur WhatsApp">
       <Icon name="whatsapp" /><span>Une question ?</span>
     </a>
 

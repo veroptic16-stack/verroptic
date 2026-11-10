@@ -233,3 +233,55 @@ body.menu-open { overflow: hidden; }
 .category-pills { list-style: none; margin: 2rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
 .category-pills a { display: inline-block; padding: .55em 1.2em; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; font-size: .85rem; font-weight: 600; transition: border-color .3s, background .3s; }
 .category-pills a:hover, .category-pills a[aria-current='page'] { border-color: var(--ink); background: var(--ink); color: #fff; }
+
+/* ───────── Mobile ───────── */
+
+/* Carrousel horizontal (glisser au doigt) : remplace les grilles empilées sur téléphone. */
+@media (max-width: 760px) {
+  .scroller {
+    display: flex !important; gap: 12px; overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter);
+    margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); padding-bottom: 6px;
+    scrollbar-width: none;
+  }
+  .scroller::-webkit-scrollbar { display: none; }
+  .scroller > * { flex: 0 0 var(--slide, 72%); scroll-snap-align: start; min-width: 0; }
+  .container.scroller { width: auto; margin-inline: 0; }
+}
+
+@media (max-width: 600px) {
+  :root { --section: 56px; }
+  body { font-size: 15.5px; }
+  .btn-row { gap: .6rem; }
+  .btn-row > .btn { flex: 1 1 100%; }
+  .btn { min-height: 50px; padding: .85em 1.2em; letter-spacing: .12em; }
+  .section-head { margin-bottom: 24px; }
+  .page-head { padding-block: 32px 24px; }
+  .page-head .lead { margin-top: .8rem; }
+  .lead { font-size: 1rem; }
+  .category-pills { flex-wrap: nowrap; overflow-x: auto; margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); scrollbar-width: none; margin-top: 1.4rem; }
+  .category-pills::-webkit-scrollbar { display: none; }
+  .category-pills a { white-space: nowrap; }
+  .product-grid { gap: 20px 12px; }
+  .product-card { gap: .6rem; }
+  .product-card .name { font-size: 1.1rem; }
+  .cta-band h2 { font-size: 2rem; }
+  .empty { padding: 32px 20px; }
+
+  /* Bouton WhatsApp flottant plus discret */
+  .wa-fab { padding: .75rem; right: 14px; bottom: 14px; }
+  .wa-fab svg { width: 24px; height: 24px; }
+
+  /* Pied de page compact : 2 colonnes */
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem 1.25rem; }
+  .footer-grid > :nth-child(2) { grid-column: 1 / -1; }
+  .site-footer { font-size: .92rem; padding-top: 48px; }
+  .footer-bottom { margin-top: 40px; padding-bottom: 84px; }
+}
+
+/* Raccourci rendez-vous dans l'en-tête mobile */
+.header-rdv { display: none; }
+@media (max-width: 960px) { .header-rdv { display: inline-grid; } }
+.menu-toggle .icon-close, .menu-toggle[aria-expanded='true'] .icon-open { display: none; }
+.menu-toggle[aria-expanded='true'] .icon-close { display: block; }
+@media (max-width: 760px) { .wa-fab--desktop { display: none; } }

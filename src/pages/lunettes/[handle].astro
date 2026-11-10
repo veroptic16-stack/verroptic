@@ -37,7 +37,7 @@ const related = products
   .filter((x) => x.id !== p.id && (x.category?.slug === p.category?.slug || x.brand?.slug === p.brand?.slug))
   .slice(0, 4);
 ---
-<Base title={label} description={p.description?.slice(0, 155) || `${label} chez ${settings.name}, opticien à Casablanca. Essayage en boutique, prix sur demande.`} image={gallery[0]?.large.src}>
+<Base title={label} description={p.description?.slice(0, 155) || `${label} chez ${settings.name}, opticien à Casablanca. Essayage en boutique, prix sur demande.`} image={gallery[0]?.large.src} hideFab>
   <section class="product-page">
     <div class="container">
       <ol class="breadcrumb">
@@ -130,6 +130,12 @@ const related = products
     </div>
   </section>
 
+  <!-- Barre d'actions fixe sur téléphone -->
+  <div class="mobile-actions" data-mobile-actions>
+    <a class="btn" href={rdv}><Icon name="calendar" /> Essayer</a>
+    <a class="btn btn-wa" href={wa} target="_blank" rel="noopener"><Icon name="whatsapp" /> WhatsApp</a>
+  </div>
+
   {related.length > 0 && (
     <section class="section related">
       <div class="container">
@@ -137,7 +143,7 @@ const related = products
           <h2>Vous aimerez <em>aussi</em></h2>
           {p.category && <a class="link-arrow" href={`/collections/${p.category.slug}/`}>Voir {p.category.name.toLowerCase()}</a>}
         </div>
-        <div class="product-grid">
+        <div class="product-grid scroller related-grid">
           {related.map((r) => <ProductCard product={r} />)}
         </div>
       </div>
@@ -158,6 +164,15 @@ const related = products
     thumbs.forEach((t) => t.setAttribute('aria-pressed', String(t === btn)));
   };
   thumbs.forEach((btn) => btn.addEventListener('click', () => show(btn)));
+
+  // Barre d'actions mobile : visible seulement quand les boutons principaux sont hors de l'écran.
+  const bar = document.querySelector<HTMLElement>('[data-mobile-actions]');
+  const mainCta = document.querySelector('.product-cta');
+  if (bar && mainCta) {
+    const update = () => bar.classList.toggle('show', mainCta.getBoundingClientRect().bottom < 0);
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+  }
 
   // Choix du coloris : n'affiche que ses photos (et les photos communes).
   const variantButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-variant-id]')];
@@ -205,8 +220,33 @@ const related = products
   .reassurance { list-style: none; margin: 2rem 0 0; padding: 0; display: grid; gap: .6rem; font-size: .92rem; color: var(--ink-soft); }
   .reassurance li::before { content: '—'; margin-right: .7rem; color: var(--blue); }
   .related { background: var(--white); }
+  .mobile-actions { display: none; }
   @media (max-width: 900px) {
-    .product-layout { grid-template-columns: 1fr; }
+    .product-layout { grid-template-columns: 1fr; gap: 24px; }
     .gallery { position: static; }
+  }
+  @media (max-width: 760px) {
+    .product-page { padding-top: 16px; }
+    .product-page .breadcrumb { margin-bottom: 1rem; }
+    .gallery-main { margin-inline: calc(-1 * var(--gutter)); }
+    .thumbs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .thumbs::-webkit-scrollbar { display: none; }
+    .thumb { width: 64px; height: 64px; flex: none; }
+    .product-info h1 { font-size: 2.2rem; }
+    .variants-block { margin-top: 1rem; }
+    .price-note { margin: 1.2rem 0 1rem; }
+    .related-grid { --slide: 58%; }
+    /* Les boutons restent toujours à portée de pouce */
+    .mobile-actions {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      padding: 10px var(--gutter) calc(10px + env(safe-area-inset-bottom));
+      background: color-mix(in srgb, var(--paper) 94%, transparent); border-top: 1px solid var(--line);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      transform: translateY(110%); transition: transform .35s var(--ease);
+    }
+    .mobile-actions.show { transform: none; }
+    .mobile-actions .btn { min-height: 48px; padding: .7em .8em; }
+    body:has(.mobile-actions) .site-footer { padding-bottom: 72px; }
   }
 </style>

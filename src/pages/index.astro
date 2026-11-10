@@ -67,7 +67,7 @@ const promises = [
 
   <!-- Engagements -->
   <section class="promises" aria-label="Nos engagements">
-    <div class="container promises-grid">
+    <div class="container promises-grid scroller">
       {promises.map((p, i) => (
         <div class="promise reveal" style={`transition-delay:${i * 80}ms`}>
           <span class="promise-num">0{i + 1}</span>
@@ -89,7 +89,7 @@ const promises = [
           </div>
           <a class="link-arrow" href="/collections/">Tout voir</a>
         </div>
-        <div class="category-grid">
+        <div class="category-grid scroller">
           {categories.map((c, i) => (
             <a class={`category-tile reveal ${i === 0 ? 'wide' : ''}`} href={`/collections/${c.slug}/`}>
               <div class={`category-media ${categoryCover(c) ? '' : 'typo'}`}>
@@ -121,7 +121,7 @@ const promises = [
           </div>
           <a class="link-arrow" href="/collections/">Voir tous les modèles</a>
         </div>
-        <div class="product-grid">
+        <div class="product-grid scroller selection-grid">
           {selection.map((p) => <div class="reveal"><ProductCard product={p} /></div>)}
         </div>
       </div>
@@ -167,7 +167,7 @@ const promises = [
           </div>
           <a class="link-arrow" href="/services/">Tous nos services</a>
         </div>
-        <div class="service-grid">
+        <div class="service-grid scroller">
           {services.slice(0, 4).map((s) => (
             <a class="service-item reveal" href={`/services/#${s.slug}`}>
               <h3>{s.title}</h3>
@@ -206,7 +206,7 @@ const promises = [
           </div>
           <a class="link-arrow" href="/conseils/">Tous les conseils</a>
         </div>
-        <div class="article-grid">
+        <div class="article-grid scroller">
           {articles.slice(0, 3).map((a) => (
             <a class="article-card reveal" href={`/conseils/${a.slug}/`}>
               <div class="frame wide">
@@ -322,4 +322,29 @@ const promises = [
   .article-card .frame.wide { aspect-ratio: 4 / 3; background: var(--mist); }
   .article-card p { margin: 0; }
   @media (max-width: 860px) { .article-grid { grid-template-columns: 1fr; } }
+
+  /* ── Mobile ── */
+  @media (max-width: 860px) {
+    .hero { padding-block: 28px 48px; }
+    .hero-visual { order: 0; min-height: 0; padding-top: 8px; }
+    .hero-disc { width: min(84%, 340px); }
+    .hero-product { width: min(66%, 300px); }
+    .hero-glasses { width: 48%; margin-block: 56px; }
+  }
+  @media (max-width: 760px) {
+    .promises { background: var(--paper); border: 0; padding-block: 8px 0; }
+    .promises-grid { --slide: 76%; }
+    .promises-grid .promise, .promises-grid .promise:first-child { border: 1px solid var(--line); background: var(--white); padding: 20px; }
+    .promise h2 { font-size: 1.25rem; }
+    .category-grid { --slide: 62%; }
+    .category-tile.wide { grid-column: auto; grid-row: auto; }
+    .category-tile.wide .category-media, .category-media { aspect-ratio: 4 / 5; height: auto; min-height: 0; }
+    .category-initial, .category-tile.wide .category-initial { font-size: 2.2rem; }
+    .selection-grid { --slide: 58%; }
+    .service-grid { --slide: 78%; background: none; border: 0; }
+    .service-item { border: 1px solid #d3e2ec; }
+    .article-grid { --slide: 80%; }
+    .maison-text .lead { margin: 1rem 0 1.5rem; }
+    .visit-card { padding: 24px 20px; }
+  }
 </style>
