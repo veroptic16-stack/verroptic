@@ -5,4 +5,8 @@ import { defineConfig } from 'astro/config';
 export default defineConfig({
   site: 'https://verroptic.com',
   output: 'static',
+  image: {
+    // Images du Storage Supabase, optimisées au build.
+    domains: ['qvjjoaczpcfddkglkhoa.supabase.co'],
+  },
 });

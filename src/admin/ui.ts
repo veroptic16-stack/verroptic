@@ -48,23 +48,7 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-// Toujours https:// (un lien sans protocole casse et donne un 404).
-export function ensureHttps(url: string | null | undefined): string {
-  const value = (url || '').trim();
-  if (!value) return '';
-  if (/^https:\/\//i.test(value)) return value;
-  if (/^http:\/\//i.test(value)) return value.replace(/^http:\/\//i, 'https://');
-  if (value.startsWith('//')) return `https:${value}`;
-  return `https://${value}`;
-}
-
-// 06 12 34 56 78 → https://wa.me/212612345678
-export function whatsappLink(phone: string | null | undefined, text = ''): string {
-  let digits = (phone || '').replace(/\D/g, '');
-  if (digits.startsWith('00')) digits = digits.slice(2);
-  if (digits.startsWith('0')) digits = `212${digits.slice(1)}`;
-  return `https://wa.me/${digits}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
-}
+export { ensureHttps, whatsappLink } from '../lib/links';
 
 function describeError(err: any): string {
   const code = err?.code;

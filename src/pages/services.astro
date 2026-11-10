@@ -1,0 +1,77 @@
+---
+import Base from '../layouts/Base.astro';
+import Photo from '../components/Photo.astro';
+import Icon from '../components/Icon.astro';
+import { getServices, getSettings } from '../lib/content';
+import { renderMarkdown } from '../lib/markdown';
+import { whatsappLink } from '../lib/links';
+
+const [services, settings] = await Promise.all([getServices(), getSettings()]);
+const wa = whatsappLink(settings.whatsapp, `Bonjour VER'OPTIC, j'ai une question sur vos services : `);
+---
+<Base title="Services" description={`Les services de ${settings.name}, opticien à Casablanca : verres, lentilles, ajustement et conseil personnalisé.`}>
+  <section class="page-head">
+    <div class="container">
+      <span class="eyebrow">Services</span>
+      <h1>L’expertise <em>derrière chaque paire</em></h1>
+      <p class="lead">De l’essayage au choix des verres, nous vous accompagnons à chaque étape.</p>
+    </div>
+  </section>
+
+  <section class="section tight" style="padding-top:0">
+    <div class="container">
+      {services.length === 0 ? (
+        <div class="empty">
+          <h2>Nos services arrivent sur le site</h2>
+          <p>Une question sur les verres, les lentilles ou un ajustement ? Écrivez-nous, nous vous répondons rapidement.</p>
+          <div class="btn-row">
+            <a class="btn btn-wa" href={wa} target="_blank" rel="noopener"><Icon name="whatsapp" /> WhatsApp</a>
+            <a class="btn btn-outline" href="/contact/#rdv">Prendre rendez-vous</a>
+          </div>
+        </div>
+      ) : (
+        <div class="service-list">
+          {services.map((s, i) => (
+            <article class={`service-row reveal ${i % 2 ? 'flip' : ''}`} id={s.slug}>
+              <div class="frame service-media">
+                <Photo path={s.cover_path} alt="" width={640} sizes="(max-width: 860px) 100vw, 45vw" />
+              </div>
+              <div>
+                <span class="eyebrow">0{i + 1}</span>
+                <h2>{s.title}</h2>
+                {s.summary && <p class="lead">{s.summary}</p>}
+                {s.body && <div class="prose" set:html={renderMarkdown(s.body)} />}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+
+  <section class="section cta-band">
+    <div class="container">
+      <div>
+        <h2>Un conseil personnalisé ? <em>On en parle.</em></h2>
+        <p>Prenez rendez-vous en boutique ou posez-nous votre question sur WhatsApp.</p>
+      </div>
+      <div class="btn-row">
+        <a class="btn btn-light" href="/contact/#rdv">Prendre rendez-vous</a>
+        <a class="btn btn-wa" href={wa} target="_blank" rel="noopener"><Icon name="whatsapp" /> WhatsApp</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style is:global>
+  .service-list { display: grid; gap: clamp(48px, 7vw, 112px); }
+  .service-row { display: grid; grid-template-columns: 1fr 1.1fr; gap: clamp(28px, 5vw, 80px); align-items: center; scroll-margin-top: 110px; }
+  .service-row.flip .service-media { order: 2; }
+  .service-media { aspect-ratio: 4 / 3; background: var(--mist); }
+  .service-row h2 { margin-bottom: 1rem; }
+  .service-row .lead { margin-bottom: 1.2rem; }
+  @media (max-width: 860px) {
+    .service-row { grid-template-columns: 1fr; }
+    .service-row.flip .service-media { order: 0; }
+  }
+</style>

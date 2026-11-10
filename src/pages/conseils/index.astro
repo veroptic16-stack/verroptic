@@ -1,0 +1,59 @@
+---
+import Base from '../../layouts/Base.astro';
+import Photo from '../../components/Photo.astro';
+import { getArticles, getSettings } from '../../lib/content';
+
+const [articles, settings] = await Promise.all([getArticles(), getSettings()]);
+const formatDate = (d: string | null) => (d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '');
+---
+<Base title="Conseils" description={`Conseils d’opticien par ${settings.name} : santé des yeux, choix des lunettes, verres et lentilles.`}>
+  <section class="page-head">
+    <div class="container">
+      <span class="eyebrow">Conseils</span>
+      <h1>Le journal <em>de vos yeux</em></h1>
+      <p class="lead">Santé visuelle, choix de la monture, entretien : nos conseils d’opticien, simplement.</p>
+    </div>
+  </section>
+
+  <section class="section tight" style="padding-top:0">
+    <div class="container">
+      {articles.length === 0 ? (
+        <div class="empty">
+          <h2>Premiers articles bientôt</h2>
+          <p>Nos conseils arrivent. En attendant, retrouvez-les sur notre Instagram.</p>
+          <div class="btn-row"><a class="btn btn-outline" href="/collections/">Voir les collections</a></div>
+        </div>
+      ) : (
+        <div class="journal-grid">
+          {articles.map((a, i) => (
+            <a class={`journal-card reveal ${i === 0 ? 'lead-card' : ''}`} href={`/conseils/${a.slug}/`}>
+              <div class="frame journal-media">
+                <Photo path={a.cover_path} alt="" width={i === 0 ? 760 : 420} sizes="(max-width: 760px) 100vw, 40vw" eager={i === 0} />
+              </div>
+              <div>
+                {a.published_at && <time class="muted" datetime={a.published_at}>{formatDate(a.published_at)}</time>}
+                <h2>{a.title}</h2>
+                {a.excerpt && <p class="muted">{a.excerpt}</p>}
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+</Base>
+
+<style is:global>
+  .journal-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(24px, 3vw, 40px) clamp(16px, 2vw, 32px); }
+  .journal-card { text-decoration: none; display: grid; gap: 1rem; align-content: start; }
+  .journal-card h2 { font-size: clamp(1.4rem, 2vw, 1.75rem); margin: .3rem 0 .5rem; }
+  .journal-card time { font-size: .8rem; }
+  .journal-card p { margin: 0; }
+  .journal-media { aspect-ratio: 4 / 3; background: var(--mist); }
+  .journal-card.lead-card { grid-column: 1 / -1; grid-template-columns: 1.3fr 1fr; gap: clamp(24px, 4vw, 56px); align-items: center; }
+  .journal-card.lead-card h2 { font-size: clamp(2rem, 3.6vw, 3rem); }
+  @media (max-width: 860px) {
+    .journal-grid { grid-template-columns: 1fr; }
+    .journal-card.lead-card { grid-template-columns: 1fr; }
+  }
+</style>

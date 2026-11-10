@@ -1,0 +1,36 @@
+---
+import Base from '../../layouts/Base.astro';
+import Catalog from '../../components/Catalog.astro';
+import { getProducts, getSettings, getCategories, type Category } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const categories = await getCategories();
+  return categories.map((category) => ({ params: { slug: category.slug }, props: { category } }));
+}
+
+const { category } = Astro.props as { category: Category };
+const [allProducts, settings, categories] = await Promise.all([getProducts(), getSettings(), getCategories()]);
+const products = allProducts.filter((p) => p.category?.slug === category.slug);
+const intro = category.description || `Découvrez notre sélection ${category.name.toLowerCase()}, à essayer dans notre boutique de Casablanca.`;
+---
+<Base title={category.name} description={`${category.name} chez ${settings.name}, opticien à Casablanca. ${intro}`}>
+  <section class="page-head">
+    <div class="container">
+      <ol class="breadcrumb">
+        <li><a href="/">Accueil</a></li>
+        <li><a href="/collections/">Collections</a></li>
+        <li aria-current="page">{category.name}</li>
+      </ol>
+      <h1>{category.name}</h1>
+      <p class="lead">{intro}</p>
+      <ul class="category-pills">
+        {categories.map((c) => <li><a href={`/collections/${c.slug}/`} aria-current={c.slug === category.slug ? 'page' : undefined}>{c.name}</a></li>)}
+      </ul>
+    </div>
+  </section>
+  <section class="section tight" style="padding-top:0">
+    <div class="container">
+      <Catalog products={products} whatsapp={settings.whatsapp} />
+    </div>
+  </section>
+</Base>

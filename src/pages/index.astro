@@ -1,11 +1,325 @@
 ---
 import Base from '../layouts/Base.astro';
+import Photo from '../components/Photo.astro';
+import ProductCard from '../components/ProductCard.astro';
+import Icon from '../components/Icon.astro';
+import { getSettings, getCategories, getProducts, getServices, getArticles, getBrands } from '../lib/content';
+import { ensureHttps, whatsappLink, telLink } from '../lib/links';
+
+const [settings, categories, products, services, articles, brands] = await Promise.all([
+  getSettings(),
+  getCategories(),
+  getProducts(),
+  getServices(),
+  getArticles(),
+  getBrands(),
+]);
+
+const withImage = products.filter((p) => p.images.length);
+const heroProduct = withImage.find((p) => p.is_featured) || withImage[0];
+const selection = (() => {
+  const featured = products.filter((p) => p.is_featured);
+  const pool = featured.length >= 4 ? featured : [...featured, ...products.filter((p) => !p.is_featured)];
+  return pool.slice(0, 8);
+})();
+const productCount = (slug: string) => products.filter((p) => p.category?.slug === slug).length;
+// Couverture de catégorie : image dédiée, sinon la photo du premier modèle de la catégorie.
+const categoryCover = (c: (typeof categories)[number]) =>
+  c.cover_path || products.find((p) => p.category?.slug === c.slug && p.images.length)?.images[0].path || null;
+const wa = whatsappLink(settings.whatsapp, `Bonjour VER'OPTIC, `);
+const mapsUrl = ensureHttps(settings.google_maps_url);
+
+const promises = [
+  { title: 'Une sélection exigeante', text: 'Des montures choisies pour leur qualité, leur confort et leur caractère.' },
+  { title: 'Des verres adaptés', text: 'Amincis, photochromiques, polarisés : nous vous orientons vers les verres qui vous conviennent.' },
+  { title: 'Un conseil sur mesure', text: 'Forme du visage, style, usage : on prend le temps de trouver la bonne paire.' },
+  { title: 'Une réponse rapide', text: 'Une question sur un modèle ? Écrivez-nous sur WhatsApp, nous répondons vite.' },
+];
 ---
-<Base title="VER'OPTIC — Opticien à Casablanca">
-  <main style="min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;text-align:center;padding:16px">
-    <div>
-      <h1 style="letter-spacing:.08em">VER'OPTIC</h1>
-      <p>Site en construction.</p>
+<Base>
+  <!-- Ouverture -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-text">
+        <span class="eyebrow">{settings.tagline}</span>
+        <h1>Voir juste,<br /><em>porter beau.</em></h1>
+        <p class="lead">Des montures de caractère, des verres pensés pour vos yeux et un conseil qui prend le temps. Bienvenue chez {settings.name}.</p>
+        <div class="btn-row">
+          <a class="btn" href="/collections/">Découvrir les collections</a>
+          <a class="btn btn-outline" href="/contact/#rdv">Prendre rendez-vous</a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="hero-disc" aria-hidden="true"></div>
+        {heroProduct ? (
+          <a class="hero-product" href={`/lunettes/${heroProduct.handle}/`}>
+            <div class="frame">
+              <Photo path={heroProduct.images[0].path} alt={heroProduct.images[0].alt || heroProduct.title} width={640} sizes="(max-width: 860px) 90vw, 46vw" eager />
+            </div>
+            <span class="hero-caption">{heroProduct.brand?.name ? `${heroProduct.brand.name} · ` : ''}{heroProduct.title}</span>
+          </a>
+        ) : (
+          <Icon name="glasses" class="hero-glasses" />
+        )}
+      </div>
     </div>
-  </main>
+  </section>
+
+  <!-- Engagements -->
+  <section class="promises" aria-label="Nos engagements">
+    <div class="container promises-grid">
+      {promises.map((p, i) => (
+        <div class="promise reveal" style={`transition-delay:${i * 80}ms`}>
+          <span class="promise-num">0{i + 1}</span>
+          <h2>{p.title}</h2>
+          <p>{p.text}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Collections -->
+  {categories.length > 0 && (
+    <section class="section">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <span class="eyebrow">Collections</span>
+            <h2>Trouvez <em>votre</em> paire</h2>
+          </div>
+          <a class="link-arrow" href="/collections/">Tout voir</a>
+        </div>
+        <div class="category-grid">
+          {categories.map((c, i) => (
+            <a class={`category-tile reveal ${i === 0 ? 'wide' : ''}`} href={`/collections/${c.slug}/`}>
+              <div class={`category-media ${categoryCover(c) ? '' : 'typo'}`}>
+                {categoryCover(c) ? (
+                  <Photo path={categoryCover(c)} alt="" width={i === 0 ? 760 : 380} sizes="(max-width: 760px) 100vw, 40vw" />
+                ) : (
+                  <span class="category-initial" aria-hidden="true">{c.name}</span>
+                )}
+              </div>
+              <div class="category-label">
+                <span class="category-name">{c.name}</span>
+                {productCount(c.slug) > 0 && <span class="muted">{productCount(c.slug)} modèle{productCount(c.slug) > 1 ? 's' : ''}</span>}
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Sélection -->
+  {selection.length > 0 && (
+    <section class="section selection">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <span class="eyebrow">La sélection</span>
+            <h2>Coups de cœur <em>du moment</em></h2>
+          </div>
+          <a class="link-arrow" href="/collections/">Voir tous les modèles</a>
+        </div>
+        <div class="product-grid">
+          {selection.map((p) => <div class="reveal"><ProductCard product={p} /></div>)}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Maison -->
+  <section class="section maison">
+    <div class="container maison-grid">
+      <div class="maison-text reveal">
+        <span class="eyebrow">La maison</span>
+        <h2>Une boutique de quartier, <em>un regard d’expert</em></h2>
+        <p class="lead">{settings.about}</p>
+        <div class="btn-row">
+          <a class="btn" href="/contact/">Nous rendre visite</a>
+          {settings.instagram && <a class="btn btn-outline" href={ensureHttps(settings.instagram)} target="_blank" rel="noopener"><Icon name="instagram" /> Instagram</a>}
+        </div>
+      </div>
+      <div class="visit-card reveal">
+        <h3>La boutique</h3>
+        <ul>
+          <li><Icon name="pin" /><span>{mapsUrl ? <a href={mapsUrl} target="_blank" rel="noopener">{settings.address}</a> : settings.address}</span></li>
+          <li><Icon name="phone" /><a href={telLink(settings.phone)}>Nous appeler</a></li>
+          <li><Icon name="whatsapp" /><a href={wa} target="_blank" rel="noopener">Écrire sur WhatsApp</a></li>
+          {settings.hours.length > 0 && (
+            <li><Icon name="clock" />
+              <dl class="hours-list">{settings.hours.map((h) => (<><dt>{h.day}</dt><dd>{h.value}</dd></>))}</dl>
+            </li>
+          )}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Services -->
+  {services.length > 0 && (
+    <section class="section services-strip">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <span class="eyebrow">Services</span>
+            <h2>Bien plus <em>qu’une monture</em></h2>
+          </div>
+          <a class="link-arrow" href="/services/">Tous nos services</a>
+        </div>
+        <div class="service-grid">
+          {services.slice(0, 4).map((s) => (
+            <a class="service-item reveal" href={`/services/#${s.slug}`}>
+              <h3>{s.title}</h3>
+              {s.summary && <p>{s.summary}</p>}
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Marques -->
+  {brands.length > 0 && (
+    <section class="section tight brands" aria-label="Nos marques">
+      <div class="container">
+        <span class="eyebrow">Nos marques</span>
+        <ul class="brand-row">
+          {brands.map((b) => (
+            <li title={b.name}>
+              {b.logo_path ? <Photo path={b.logo_path} alt={b.name} width={160} sizes="160px" /> : <span>{b.name}</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )}
+
+  <!-- Conseils -->
+  {articles.length > 0 && (
+    <section class="section">
+      <div class="container">
+        <div class="section-head reveal">
+          <div>
+            <span class="eyebrow">Conseils</span>
+            <h2>Le journal <em>de vos yeux</em></h2>
+          </div>
+          <a class="link-arrow" href="/conseils/">Tous les conseils</a>
+        </div>
+        <div class="article-grid">
+          {articles.slice(0, 3).map((a) => (
+            <a class="article-card reveal" href={`/conseils/${a.slug}/`}>
+              <div class="frame wide">
+                <Photo path={a.cover_path} alt="" width={420} sizes="(max-width: 760px) 100vw, 33vw" />
+              </div>
+              <h3>{a.title}</h3>
+              {a.excerpt && <p class="muted">{a.excerpt}</p>}
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Appel final -->
+  <section class="section cta-band">
+    <div class="container">
+      <div>
+        <h2>Envie d’essayer ? <em>Passez nous voir.</em></h2>
+        <p>Réservez un créneau pour un essayage ou un conseil, ou posez-nous votre question sur WhatsApp.</p>
+      </div>
+      <div class="btn-row">
+        <a class="btn btn-light" href="/contact/#rdv">Prendre rendez-vous</a>
+        <a class="btn btn-wa" href={wa} target="_blank" rel="noopener"><Icon name="whatsapp" /> WhatsApp</a>
+      </div>
+    </div>
+  </section>
 </Base>
+
+<style is:global>
+  .hero { padding-block: clamp(32px, 6vw, 88px) clamp(48px, 7vw, 104px); overflow: hidden; }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: clamp(32px, 5vw, 80px); align-items: center; }
+  .hero-text .lead { margin: 1.6rem 0 2.2rem; }
+  .hero-visual { position: relative; display: grid; place-items: center; min-height: clamp(320px, 42vw, 560px); }
+  .hero-disc { position: absolute; left: 50%; top: 50%; width: min(96%, 560px); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff 0%, var(--mist) 55%, #dbe8f1 100%); }
+  .hero-product { position: relative; width: min(84%, 520px); text-decoration: none; display: grid; gap: 1rem; justify-items: center; }
+  .hero-product .frame { width: 100%; border-radius: 50%; box-shadow: 0 30px 60px -30px rgb(15 33 49 / .35); }
+  .hero-caption { font-size: .75rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-soft); }
+  .hero-glasses { position: relative; width: 62%; color: var(--blue-deep); opacity: .85; }
+  @media (max-width: 860px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-visual { min-height: 300px; order: -1; }
+  }
+
+  .promises { border-block: 1px solid var(--line); background: var(--white); }
+  .promises-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .promise { padding: clamp(28px, 3vw, 44px) clamp(16px, 2vw, 28px); border-left: 1px solid var(--line); }
+  .promise:first-child { border-left: 0; padding-left: 0; }
+  .promise-num { font-family: var(--serif); font-size: 1.1rem; color: var(--blue); }
+  .promise h2 { font-size: 1.35rem; margin: .4rem 0 .5rem; }
+  .promise p { margin: 0; font-size: .92rem; color: var(--ink-soft); }
+  @media (max-width: 960px) {
+    .promises-grid { grid-template-columns: 1fr 1fr; }
+    .promise:nth-child(3) { border-left: 0; padding-left: 0; }
+    .promise:nth-child(n + 3) { border-top: 1px solid var(--line); }
+  }
+  @media (max-width: 520px) {
+    .promises-grid { grid-template-columns: 1fr; }
+    .promise { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); }
+    .promise:first-child { border-top: 0; }
+  }
+
+  .category-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(12px, 1.6vw, 24px); }
+  .category-tile { text-decoration: none; display: grid; gap: .9rem; }
+  .category-tile.wide { grid-column: span 2; grid-row: span 2; grid-template-rows: 1fr auto; }
+  .category-media { position: relative; aspect-ratio: 4 / 3; background: var(--white); display: grid; place-items: center; overflow: hidden; }
+  .category-tile.wide .category-media { aspect-ratio: auto; height: 100%; min-height: 320px; background: var(--mist); }
+  .category-media img { width: 100%; height: 100%; object-fit: cover; transition: transform .8s var(--ease); }
+  .category-tile:hover img { transform: scale(1.04); }
+  .category-media.typo { background: var(--mist); transition: background .4s var(--ease); }
+  .category-tile:hover .category-media.typo { background: #dfeaf2; }
+  .category-initial { font-family: var(--serif); font-style: italic; font-size: clamp(2rem, 4vw, 3.4rem); color: var(--blue-deep); opacity: .55; padding: 1rem; text-align: center; }
+  .category-tile.wide .category-initial { font-size: clamp(3rem, 7vw, 6rem); }
+  .category-label { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; border-bottom: 1px solid var(--line); padding-bottom: .7rem; }
+  .category-name { font-family: var(--serif); font-size: clamp(1.4rem, 2vw, 1.8rem); }
+  .category-label .muted { font-size: .8rem; }
+  @media (max-width: 760px) {
+    .category-grid { grid-template-columns: 1fr 1fr; }
+    .category-tile.wide { grid-row: auto; }
+    .category-tile.wide .category-media { aspect-ratio: 16 / 10; min-height: 0; }
+  }
+
+  .selection { background: var(--white); }
+
+  .maison-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: clamp(32px, 6vw, 96px); align-items: center; }
+  .maison-text .lead { margin: 1.4rem 0 2rem; }
+  .visit-card { background: var(--ink); color: #fff; padding: clamp(28px, 4vw, 48px); }
+  .visit-card h3 { margin-bottom: 1.5rem; }
+  .visit-card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.1rem; }
+  .visit-card li { display: grid; grid-template-columns: 22px 1fr; gap: .9rem; align-items: start; }
+  .visit-card li > svg { width: 22px; height: 22px; color: #7fc0e6; margin-top: 2px; }
+  .visit-card a { text-decoration: none; border-bottom: 1px solid rgb(255 255 255 / .3); }
+  .visit-card a:hover { border-color: #fff; }
+  .visit-card .hours-list dt { color: #aebbc6; }
+  @media (max-width: 860px) { .maison-grid { grid-template-columns: 1fr; } }
+
+  .services-strip { background: var(--mist); }
+  .service-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: #d3e2ec; border: 1px solid #d3e2ec; }
+  .service-item { background: var(--mist); padding: clamp(24px, 3vw, 40px); text-decoration: none; transition: background .3s; }
+  .service-item:hover { background: #fff; }
+  .service-item h3 { margin-bottom: .6rem; }
+  .service-item p { margin: 0; color: var(--ink-soft); font-size: .95rem; }
+  @media (max-width: 960px) { .service-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px) { .service-grid { grid-template-columns: 1fr; } }
+
+  .brand-row { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: clamp(24px, 4vw, 56px); }
+  .brand-row img { max-height: 44px; width: auto; filter: grayscale(1); opacity: .75; transition: opacity .3s, filter .3s; }
+  .brand-row li:hover img { filter: none; opacity: 1; }
+  .brand-row span { font-family: var(--serif); font-size: 1.5rem; color: var(--ink-soft); }
+
+  .article-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2vw, 32px); }
+  .article-card { text-decoration: none; display: grid; gap: .9rem; align-content: start; }
+  .article-card .frame.wide { aspect-ratio: 4 / 3; background: var(--mist); }
+  .article-card p { margin: 0; }
+  @media (max-width: 860px) { .article-grid { grid-template-columns: 1fr; } }
+</style>

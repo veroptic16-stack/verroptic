@@ -1,0 +1,32 @@
+---
+import Photo from './Photo.astro';
+import type { Product } from '../lib/content';
+
+interface Props { product: Product }
+const { product: p } = Astro.props;
+const cover = p.images[0];
+---
+<a
+  class="product-card"
+  href={`/lunettes/${p.handle}/`}
+  data-product
+  data-category={p.category?.slug || ''}
+  data-gender={p.gender || ''}
+  data-shape={p.frame_shape || ''}
+  data-material={p.material || ''}
+  data-brand={p.brand?.slug || ''}
+>
+  <div class="frame">
+    {p.is_new && <span class="badge">Nouveau</span>}
+    <Photo path={cover?.path} alt={cover?.alt || p.title} width={420} sizes="(max-width: 760px) 50vw, (max-width: 1080px) 33vw, 300px" />
+  </div>
+  <div class="meta">
+    {p.brand && <span class="brand">{p.brand.name}</span>}
+    <span class="name">{p.title}</span>
+    {p.variants.length > 1 && (
+      <span class="swatches" aria-label={`${p.variants.length} coloris`}>
+        {p.variants.slice(0, 5).map((v) => <span class="swatch" style={`background:${v.color_hex || '#ccc'}`} title={v.color_name}></span>)}
+      </span>
+    )}
+  </div>
+</a>

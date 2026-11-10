@@ -1,0 +1,25 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+---
+<Base title="Page introuvable">
+  <section class="section">
+    <div class="container notfound">
+      <Icon name="glasses" class="notfound-icon" />
+      <span class="eyebrow">Erreur 404</span>
+      <h1>Cette page est <em>floue</em>.</h1>
+      <p class="lead">Elle a peut-être été déplacée ou n’existe plus. Pas d’inquiétude, on vous remet sur la bonne voie.</p>
+      <div class="btn-row">
+        <a class="btn" href="/">Retour à l’accueil</a>
+        <a class="btn btn-outline" href="/collections/">Voir les collections</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style is:global>
+  .notfound { text-align: center; display: grid; justify-items: center; gap: .5rem; padding-block: clamp(24px, 6vw, 80px); }
+  .notfound-icon { width: 140px; color: var(--blue); filter: blur(1.5px); margin-bottom: 1.5rem; }
+  .notfound .lead { margin: 1rem auto 2rem; }
+  .notfound .btn-row { justify-content: center; }
+</style>

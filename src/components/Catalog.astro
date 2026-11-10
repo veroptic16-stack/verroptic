@@ -1,0 +1,106 @@
+---
+// Grille produits + filtres (côté navigateur, sans rechargement ; l'URL garde les filtres).
+import ProductCard from './ProductCard.astro';
+import Icon from './Icon.astro';
+import { GENDER_LABELS, capitalize, type Product } from '../lib/content';
+import { whatsappLink } from '../lib/links';
+
+interface Props {
+  products: Product[];
+  whatsapp: string;
+  showCategoryFilter?: boolean;
+}
+const { products, whatsapp, showCategoryFilter = false } = Astro.props;
+
+const distinct = (values: (string | null | undefined)[]) => [...new Set(values.filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, 'fr'));
+
+const filters = [
+  showCategoryFilter && { key: 'category', label: 'Catégorie', options: distinct(products.map((p) => p.category?.slug)).map((v) => ({ value: v, label: products.find((p) => p.category?.slug === v)!.category!.name })) },
+  { key: 'gender', label: 'Pour', options: distinct(products.map((p) => p.gender)).map((v) => ({ value: v, label: GENDER_LABELS[v] || capitalize(v) })) },
+  { key: 'shape', label: 'Forme', options: distinct(products.map((p) => p.frame_shape)).map((v) => ({ value: v, label: capitalize(v) })) },
+  { key: 'material', label: 'Matière', options: distinct(products.map((p) => p.material)).map((v) => ({ value: v, label: capitalize(v) })) },
+  { key: 'brand', label: 'Marque', options: distinct(products.map((p) => p.brand?.slug)).map((v) => ({ value: v, label: products.find((p) => p.brand?.slug === v)!.brand!.name })) },
+].filter((f): f is { key: string; label: string; options: { value: string; label: string }[] } => !!f && f.options.length > 1);
+---
+{products.length === 0 ? (
+  <div class="empty">
+    <h2>Collection bientôt en ligne</h2>
+    <p>Nos modèles arrivent sur le site. En attendant, découvrez-les en boutique ou demandez-nous des photos sur WhatsApp.</p>
+    <div class="btn-row">
+      <a class="btn btn-wa" href={whatsappLink(whatsapp, "Bonjour VER'OPTIC, je souhaite voir vos modèles.")} target="_blank" rel="noopener"><Icon name="whatsapp" /> Demander sur WhatsApp</a>
+      <a class="btn btn-outline" href="/contact/#rdv">Prendre rendez-vous</a>
+    </div>
+  </div>
+) : (
+  <div data-catalog>
+    {filters.length > 0 && (
+      <form class="filters" aria-label="Filtrer les modèles" data-filters>
+        {filters.map((f) => (
+          <label class="filter">
+            <span>{f.label}</span>
+            <select name={f.key}>
+              <option value="">Tous</option>
+              {f.options.map((o) => <option value={o.value}>{o.label}</option>)}
+            </select>
+          </label>
+        ))}
+        <button type="reset" class="filter-reset">Réinitialiser</button>
+      </form>
+    )}
+    <p class="result-count muted" aria-live="polite" data-count>{products.length} modèle{products.length > 1 ? 's' : ''}</p>
+    <div class="product-grid">
+      {products.map((p) => <ProductCard product={p} />)}
+    </div>
+    <p class="empty-filter" hidden data-empty>Aucun modèle ne correspond à ces critères. <button type="button" class="filter-reset" data-clear>Voir tous les modèles</button></p>
+  </div>
+)}
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-catalog]');
+  const form = root?.querySelector<HTMLFormElement>('[data-filters]');
+  if (root && form) {
+    const cards = [...root.querySelectorAll<HTMLElement>('[data-product]')];
+    const count = root.querySelector<HTMLElement>('[data-count]')!;
+    const empty = root.querySelector<HTMLElement>('[data-empty]')!;
+    const selects = [...form.querySelectorAll<HTMLSelectElement>('select')];
+
+    const apply = () => {
+      const active = selects.filter((s) => s.value);
+      let visible = 0;
+      cards.forEach((card) => {
+        const show = active.every((s) => card.dataset[s.name] === s.value);
+        card.hidden = !show;
+        if (show) visible++;
+      });
+      count.textContent = `${visible} modèle${visible > 1 ? 's' : ''}`;
+      empty.hidden = visible > 0;
+      const params = new URLSearchParams(active.map((s) => [s.name, s.value]));
+      history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}`);
+    };
+
+    const params = new URLSearchParams(location.search);
+    selects.forEach((s) => {
+      const v = params.get(s.name);
+      if (v && [...s.options].some((o) => o.value === v)) s.value = v;
+    });
+    form.addEventListener('change', apply);
+    form.addEventListener('reset', () => setTimeout(apply));
+    root.querySelector('[data-clear]')?.addEventListener('click', () => form.reset());
+    apply();
+  }
+</script>
+
+<style is:global>
+  .filters { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem 1rem; padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--line); }
+  .filter { display: grid; gap: .35rem; min-width: 150px; flex: 1 1 150px; max-width: 220px; }
+  .filter span { font-size: .7rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+  .filter select {
+    appearance: none; min-height: 46px; padding: .6em 2.2em .6em .9em; border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%230f2131' stroke-width='1.5'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E") no-repeat right .9em center;
+    cursor: pointer;
+  }
+  .filter-reset { background: none; border: 0; padding: .6em 0; font-size: .8rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; text-decoration: underline; cursor: pointer; }
+  .result-count { margin: 0 0 1.5rem; font-size: .9rem; }
+  .empty-filter { padding: 3rem 0; text-align: center; color: var(--ink-soft); }
+  @media (max-width: 520px) { .filter { max-width: none; flex-basis: calc(50% - .5rem); min-width: 0; } }
+</style>

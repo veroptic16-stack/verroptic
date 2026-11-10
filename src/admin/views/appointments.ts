@@ -47,7 +47,7 @@ export async function renderAppointments(root: HTMLElement, onChange?: () => voi
         {},
         r.preferred_date || r.preferred_slot ? [h('dt', {}, 'Souhait'), h('dd', {}, [formatDate(r.preferred_date), r.preferred_slot].filter(Boolean).join(' · '))] : null,
         r.reason ? [h('dt', {}, 'Motif'), h('dd', {}, r.reason)] : null,
-        r.product_handle ? [h('dt', {}, 'Modèle'), h('dd', {}, h('a', { href: `/lunettes/${r.product_handle}`, target: '_blank', rel: 'noopener' }, r.product_handle))] : null,
+        r.product_handle ? [h('dt', {}, 'Modèle'), h('dd', {}, h('a', { href: `/lunettes/${r.product_handle}/`, target: '_blank', rel: 'noopener' }, r.product_handle))] : null,
         r.message ? [h('dt', {}, 'Message'), h('dd', {}, r.message)] : null,
       ),
       h(

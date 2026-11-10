@@ -1,21 +1,171 @@
 ---
+import '@fontsource/cormorant-garamond/500.css';
+import '@fontsource/cormorant-garamond/500-italic.css';
+import '@fontsource/cormorant-garamond/600.css';
+import '@fontsource-variable/manrope';
+import '../styles/global.css';
+import Logo from '../components/Logo.astro';
+import Icon from '../components/Icon.astro';
+import { getSettings, getCategories } from '../lib/content';
+import { ensureHttps, whatsappLink, telLink, displayPhone } from '../lib/links';
+
 interface Props {
-  title: string;
+  title?: string;
   description?: string;
+  image?: string;
 }
-const { title, description = "VER'OPTIC, opticien à Casablanca." } = Astro.props;
+
+const settings = await getSettings();
+const categories = await getCategories();
+const {
+  title,
+  description = `${settings.name}, ${settings.tagline.toLowerCase()}. Montures optiques et solaires, verres et lentilles, conseil personnalisé à Sidi Bernoussi.`,
+  image,
+} = Astro.props;
+
+const fullTitle = title ? `${title} | ${settings.name}` : `${settings.name} | ${settings.tagline}`;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const path = Astro.url.pathname;
+
+const featuredCategories = categories.filter((c) => ['optique', 'solaire'].includes(c.slug));
+const nav = [
+  { href: '/collections/', label: 'Collections' },
+  ...featuredCategories.map((c) => ({ href: `/collections/${c.slug}/`, label: c.name })),
+  { href: '/services/', label: 'Services' },
+  { href: '/conseils/', label: 'Conseils' },
+  { href: '/contact/', label: 'Contact' },
+];
+const isCurrent = (href: string) => (href === '/collections/' ? path === href : path.startsWith(href));
+
+const wa = whatsappLink(settings.whatsapp, `Bonjour VER'OPTIC, `);
+const socials = [
+  { url: ensureHttps(settings.instagram), label: 'Instagram' },
+  { url: ensureHttps(settings.facebook), label: 'Facebook' },
+  { url: ensureHttps(settings.tiktok), label: 'TikTok' },
+].filter((s) => s.url);
+const mapsUrl = ensureHttps(settings.google_maps_url);
+const year = new Date().getFullYear();
 ---
 <!doctype html>
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
     <!-- Phase de développement : à retirer au lancement -->
     <meta name="robots" content="noindex, nofollow" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_MA" />
+    <meta property="og:site_name" content={settings.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {image && <meta property="og:image" content={new URL(image, Astro.site).href} />}
+    <meta name="theme-color" content="#faf8f4" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <slot name="head" />
   </head>
   <body>
-    <slot />
+    <a class="skip-link" href="#contenu">Aller au contenu</a>
+
+    <header class="site-header" data-header>
+      <div class="container header-inner">
+        <Logo />
+        <nav class="main-nav" id="menu" aria-label="Navigation principale" data-menu>
+          <ul>
+            {nav.map((item) => (
+              <li><a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>{item.label}</a></li>
+            ))}
+          </ul>
+          <div class="nav-cta">
+            <a class="btn" href="/contact/#rdv">Prendre rendez-vous</a>
+            <a class="btn btn-wa" href={wa} target="_blank" rel="noopener"><Icon name="whatsapp" /> WhatsApp</a>
+          </div>
+        </nav>
+        <div class="header-actions">
+          <a class="btn" href="/contact/#rdv">Prendre rendez-vous</a>
+          <button class="icon-btn menu-toggle" type="button" aria-controls="menu" aria-expanded="false" aria-label="Ouvrir le menu" data-menu-toggle>
+            <Icon name="menu" />
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="contenu">
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div class="footer-brand">
+          <Logo />
+          <p>{settings.tagline}. Montures de caractère, verres adaptés et conseil sur mesure.</p>
+        </div>
+        <div>
+          <h2>Boutique</h2>
+          <p>
+            {mapsUrl ? <a href={mapsUrl} target="_blank" rel="noopener">{settings.address}</a> : settings.address}
+          </p>
+          {settings.hours.length > 0 && (
+            <dl class="hours-list">
+              {settings.hours.map((h) => (<><dt>{h.day}</dt><dd>{h.value}</dd></>))}
+            </dl>
+          )}
+        </div>
+        <div>
+          <h2>Explorer</h2>
+          <ul>
+            {nav.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
+          </ul>
+        </div>
+        <div>
+          <h2>Contact</h2>
+          <ul>
+            <li><a href={telLink(settings.phone)}>{displayPhone(settings.phone)}</a></li>
+            <li><a href={wa} target="_blank" rel="noopener">WhatsApp</a></li>
+            {settings.email && <li><a href={`mailto:${settings.email}`}>{settings.email}</a></li>}
+            {socials.map((s) => <li><a href={s.url} target="_blank" rel="noopener">{s.label}</a></li>)}
+          </ul>
+        </div>
+      </div>
+      <div class="container footer-bottom">
+        <span>© {year} {settings.name}. Tous droits réservés.</span>
+        <span>Casablanca, Maroc</span>
+      </div>
+    </footer>
+
+    <a class="wa-fab" href={wa} target="_blank" rel="noopener" aria-label="Écrire sur WhatsApp">
+      <Icon name="whatsapp" /><span>Une question ?</span>
+    </a>
+
+    <script>
+      // En-tête : bordure au défilement + menu mobile.
+      const header = document.querySelector<HTMLElement>('[data-header]');
+      const onScroll = () => header?.classList.toggle('scrolled', window.scrollY > 8);
+      onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+
+      const toggle = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+      const menu = document.querySelector<HTMLElement>('[data-menu]');
+      const setMenu = (open: boolean) => {
+        menu?.classList.toggle('open', open);
+        document.body.classList.toggle('menu-open', open);
+        toggle?.setAttribute('aria-expanded', String(open));
+        toggle?.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
+      };
+      toggle?.addEventListener('click', () => setMenu(!menu?.classList.contains('open')));
+      menu?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setMenu(false)));
+      document.addEventListener('keydown', (e) => e.key === 'Escape' && setMenu(false));
+
+      // Apparition douce des sections.
+      const io = new IntersectionObserver(
+        (entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }),
+        { rootMargin: '0px 0px -8% 0px' },
+      );
+      document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+    </script>
   </body>
 </html>

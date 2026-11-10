@@ -1,0 +1,212 @@
+---
+import Base from '../../layouts/Base.astro';
+import Photo from '../../components/Photo.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import Icon from '../../components/Icon.astro';
+import { getProducts, getSettings, GENDER_LABELS, capitalize, type Product } from '../../lib/content';
+import { whatsappLink } from '../../lib/links';
+import { responsiveImage } from '../../lib/images';
+
+export async function getStaticPaths() {
+  const products = await getProducts();
+  return products.map((product) => ({ params: { handle: product.handle }, props: { product } }));
+}
+
+const { product: p } = Astro.props as { product: Product };
+const [settings, products] = await Promise.all([getSettings(), getProducts()]);
+
+const pageUrl = new URL(`/lunettes/${p.handle}/`, Astro.site).href;
+const label = [p.brand?.name, p.title].filter(Boolean).join(' ');
+const wa = whatsappLink(settings.whatsapp, `Bonjour VER'OPTIC, je suis intéressé(e) par le modèle « ${label} »${p.sku ? ` (réf. ${p.sku})` : ''} : ${pageUrl}`);
+const rdv = `/contact/?modele=${encodeURIComponent(p.handle)}#rdv`;
+
+// Galerie : chaque vignette connaît sa grande version (pour l'échanger en JS).
+const gallery = await Promise.all(
+  p.images.map(async (img) => ({ ...img, large: await responsiveImage(img.path, 760) })),
+);
+
+const details = [
+  ['Pour', p.gender ? GENDER_LABELS[p.gender] || capitalize(p.gender) : null],
+  ['Forme', capitalize(p.frame_shape)],
+  ['Matière', capitalize(p.material)],
+  ['Catégorie', p.category?.name],
+  ['Référence', p.sku],
+].filter(([, v]) => v) as [string, string][];
+
+const related = products
+  .filter((x) => x.id !== p.id && (x.category?.slug === p.category?.slug || x.brand?.slug === p.brand?.slug))
+  .slice(0, 4);
+---
+<Base title={label} description={p.description?.slice(0, 155) || `${label} chez ${settings.name}, opticien à Casablanca. Essayage en boutique, prix sur demande.`} image={gallery[0]?.large.src}>
+  <section class="product-page">
+    <div class="container">
+      <ol class="breadcrumb">
+        <li><a href="/">Accueil</a></li>
+        <li><a href="/collections/">Collections</a></li>
+        {p.category && <li><a href={`/collections/${p.category.slug}/`}>{p.category.name}</a></li>}
+        <li aria-current="page">{p.title}</li>
+      </ol>
+
+      <div class="product-layout">
+        <div class="gallery" data-gallery>
+          <div class="frame gallery-main">
+            {p.is_new && <span class="badge">Nouveau</span>}
+            {gallery[0] ? (
+              <img
+                data-main
+                src={gallery[0].large.src}
+                srcset={gallery[0].large.srcset || undefined}
+                sizes="(max-width: 900px) 92vw, 55vw"
+                width={gallery[0].large.width}
+                height={gallery[0].large.height}
+                alt={gallery[0].alt || p.title}
+                fetchpriority="high"
+              />
+            ) : (
+              <Icon name="glasses" class="placeholder" />
+            )}
+          </div>
+          {gallery.length > 1 && (
+            <ul class="thumbs" aria-label="Autres photos">
+              {gallery.map((img, i) => (
+                <li data-variant={img.variant_id || ''}>
+                  <button
+                    type="button"
+                    class="thumb"
+                    aria-pressed={i === 0 ? 'true' : 'false'}
+                    aria-label={`Photo ${i + 1}`}
+                    data-src={img.large.src}
+                    data-srcset={img.large.srcset}
+                    data-alt={img.alt || p.title}
+                  >
+                    <Photo path={img.path} alt="" width={120} sizes="96px" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div class="product-info">
+          {p.brand && <span class="eyebrow">{p.brand.name}</span>}
+          <h1>{p.title}</h1>
+
+          {p.variants.length > 0 && (
+            <div class="variants-block">
+              <p class="variant-label">Coloris : <strong data-variant-name>{p.variants[0].color_name}</strong></p>
+              <div class="variant-list" role="group" aria-label="Coloris">
+                {p.variants.map((v, i) => (
+                  <button type="button" class="variant" aria-pressed={i === 0 ? 'true' : 'false'} data-variant-id={v.id} data-name={v.color_name} title={v.color_name}>
+                    <span style={`background:${v.color_hex || '#ccc'}`}></span>
+                    <span class="visually-hidden">{v.color_name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <p class="price-note">Prix sur demande · Essayage en boutique</p>
+
+          <div class="product-cta">
+            <a class="btn" href={rdv}><Icon name="calendar" /> Réserver un essayage</a>
+            <a class="btn btn-wa" href={wa} target="_blank" rel="noopener"><Icon name="whatsapp" /> Demander sur WhatsApp</a>
+          </div>
+
+          {p.description && <div class="product-desc">{p.description.split(/\n{2,}/).map((para) => <p>{para}</p>)}</div>}
+
+          {details.length > 0 && (
+            <dl class="product-details">
+              {details.map(([k, v]) => (<><dt>{k}</dt><dd>{v}</dd></>))}
+            </dl>
+          )}
+
+          <ul class="reassurance">
+            <li>Ajustement de la monture à votre visage</li>
+            <li>Conseil sur les verres adaptés à votre vue</li>
+            <li>Réponse rapide sur WhatsApp</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {related.length > 0 && (
+    <section class="section related">
+      <div class="container">
+        <div class="section-head">
+          <h2>Vous aimerez <em>aussi</em></h2>
+          {p.category && <a class="link-arrow" href={`/collections/${p.category.slug}/`}>Voir {p.category.name.toLowerCase()}</a>}
+        </div>
+        <div class="product-grid">
+          {related.map((r) => <ProductCard product={r} />)}
+        </div>
+      </div>
+    </section>
+  )}
+</Base>
+
+<script>
+  const gallery = document.querySelector<HTMLElement>('[data-gallery]');
+  const main = gallery?.querySelector<HTMLImageElement>('[data-main]');
+  const thumbs = [...(gallery?.querySelectorAll<HTMLButtonElement>('.thumb') || [])];
+
+  const show = (btn: HTMLButtonElement) => {
+    if (!main) return;
+    main.src = btn.dataset.src!;
+    main.srcset = btn.dataset.srcset || '';
+    main.alt = btn.dataset.alt || '';
+    thumbs.forEach((t) => t.setAttribute('aria-pressed', String(t === btn)));
+  };
+  thumbs.forEach((btn) => btn.addEventListener('click', () => show(btn)));
+
+  // Choix du coloris : n'affiche que ses photos (et les photos communes).
+  const variantButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-variant-id]')];
+  const variantName = document.querySelector<HTMLElement>('[data-variant-name]');
+  variantButtons.forEach((btn) =>
+    btn.addEventListener('click', () => {
+      variantButtons.forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      if (variantName) variantName.textContent = btn.dataset.name || '';
+      const id = btn.dataset.variantId;
+      const items = thumbs.map((t) => t.closest('li')!);
+      const matching = items.filter((li) => li.dataset.variant === id);
+      if (!matching.length) return; // aucune photo dédiée : on garde toute la galerie
+      items.forEach((li) => (li.hidden = !!li.dataset.variant && li.dataset.variant !== id));
+      show(matching[0].querySelector('.thumb')!);
+    }),
+  );
+</script>
+
+<style is:global>
+  .product-page { padding-block: clamp(24px, 4vw, 48px) clamp(48px, 7vw, 96px); }
+  .product-layout { display: grid; grid-template-columns: 1.15fr 1fr; gap: clamp(32px, 5vw, 80px); align-items: start; }
+  .gallery { position: sticky; top: 96px; display: grid; gap: 12px; }
+  .gallery-main { aspect-ratio: 1; }
+  .gallery-main img { object-fit: contain; }
+  .gallery-main .badge { position: absolute; top: 1rem; left: 1rem; z-index: 1; }
+  .thumbs { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .thumb { width: 84px; height: 84px; padding: 0; border: 1px solid var(--line); background: var(--white); cursor: pointer; overflow: hidden; display: grid; place-items: center; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb .placeholder { width: 60%; color: #c4ccd2; }
+  .thumb[aria-pressed='true'] { border-color: var(--ink); }
+
+  .product-info h1 { font-size: clamp(2.2rem, 4.4vw, 3.6rem); }
+  .variants-block { margin-top: 1.6rem; }
+  .variant-label { margin-bottom: .6rem; font-size: .9rem; color: var(--ink-soft); }
+  .variant-list { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .variant { width: 38px; height: 38px; padding: 4px; border: 1px solid var(--line); border-radius: 50%; background: none; cursor: pointer; }
+  .variant span:first-child { display: block; width: 100%; height: 100%; border-radius: 50%; }
+  .variant[aria-pressed='true'] { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+  .price-note { margin: 1.8rem 0 1.2rem; font-size: .8rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .product-cta { display: grid; gap: .7rem; }
+  .product-desc { margin-top: 2rem; color: var(--ink-soft); }
+  .product-details { display: grid; grid-template-columns: max-content 1fr; gap: 0; margin: 2rem 0 0; border-top: 1px solid var(--line); }
+  .product-details dt, .product-details dd { padding: .8rem 0; border-bottom: 1px solid var(--line); margin: 0; }
+  .product-details dt { padding-right: 2rem; font-size: .72rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .reassurance { list-style: none; margin: 2rem 0 0; padding: 0; display: grid; gap: .6rem; font-size: .92rem; color: var(--ink-soft); }
+  .reassurance li::before { content: '—'; margin-right: .7rem; color: var(--blue); }
+  .related { background: var(--white); }
+  @media (max-width: 900px) {
+    .product-layout { grid-template-columns: 1fr; }
+    .gallery { position: static; }
+  }
+</style>

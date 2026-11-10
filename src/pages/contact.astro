@@ -1,0 +1,206 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import { getSettings, getProducts } from '../lib/content';
+import { ensureHttps, whatsappLink, telLink, displayPhone } from '../lib/links';
+import { SUPABASE_URL, SUPABASE_KEY } from '../lib/supabase';
+
+const [settings, products] = await Promise.all([getSettings(), getProducts()]);
+const wa = whatsappLink(settings.whatsapp, `Bonjour VER'OPTIC, `);
+const mapsUrl = ensureHttps(settings.google_maps_url);
+const models = products.map((p) => ({ handle: p.handle, label: [p.brand?.name, p.title].filter(Boolean).join(' ') }));
+
+const reasons = ['Essayage de montures', 'Examen de vue', 'Lentilles de contact', 'Ajustement ou réparation', 'Autre demande'];
+const slots = ['Matin', 'Après-midi', 'Fin de journée'];
+---
+<Base title="Contact & rendez-vous" description={`Prenez rendez-vous chez ${settings.name} à Sidi Bernoussi, Casablanca : essayage, conseil, verres et lentilles. Adresse, horaires et WhatsApp.`}>
+  <section class="page-head">
+    <div class="container">
+      <span class="eyebrow">Contact</span>
+      <h1>Venez nous <em>rencontrer</em></h1>
+      <p class="lead">Réservez un créneau en quelques secondes : nous vous rappelons pour confirmer. Vous préférez écrire ? Nous répondons aussi sur WhatsApp.</p>
+    </div>
+  </section>
+
+  <section class="section tight contact-section" style="padding-top:0">
+    <div class="container contact-grid">
+      <div class="rdv-card" id="rdv">
+        <h2>Demande de rendez-vous</h2>
+        <form class="rdv-form" data-rdv-form novalidate>
+          <div class="field">
+            <label for="full_name">Nom et prénom <span aria-hidden="true">*</span></label>
+            <input id="full_name" name="full_name" type="text" autocomplete="name" required minlength="2" maxlength="100" />
+          </div>
+          <div class="field">
+            <label for="phone">Téléphone <span aria-hidden="true">*</span></label>
+            <input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="06 00 00 00 00" required minlength="6" maxlength="30" />
+          </div>
+          <div class="field">
+            <label for="reason">Motif</label>
+            <select id="reason" name="reason">
+              {reasons.map((r) => <option value={r}>{r}</option>)}
+            </select>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="preferred_date">Date souhaitée</label>
+              <input id="preferred_date" name="preferred_date" type="date" />
+            </div>
+            <div class="field">
+              <label for="preferred_slot">Moment</label>
+              <select id="preferred_slot" name="preferred_slot">
+                <option value="">Indifférent</option>
+                {slots.map((s) => <option value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          {models.length > 0 && (
+            <div class="field">
+              <label for="product_handle">Modèle à essayer (facultatif)</label>
+              <select id="product_handle" name="product_handle">
+                <option value="">Aucun en particulier</option>
+                {models.map((m) => <option value={m.handle}>{m.label}</option>)}
+              </select>
+            </div>
+          )}
+          <div class="field">
+            <label for="message">Message (facultatif)</label>
+            <textarea id="message" name="message" rows="3" maxlength="1000"></textarea>
+          </div>
+          <!-- Piège à robots : invisible pour les humains -->
+          <div class="hp" aria-hidden="true">
+            <label for="website">Ne pas remplir</label>
+            <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
+          </div>
+          <p class="form-error" role="alert" hidden data-error></p>
+          <button class="btn" type="submit" data-submit>Envoyer ma demande</button>
+          <p class="form-note muted">Vos coordonnées servent uniquement à vous recontacter au sujet de ce rendez-vous.</p>
+        </form>
+        <div class="form-success" hidden data-success tabindex="-1">
+          <h3>Merci, c’est noté !</h3>
+          <p>Nous vous rappelons très vite pour confirmer votre rendez-vous. Pour une réponse immédiate, écrivez-nous sur WhatsApp.</p>
+          <a class="btn btn-wa" href={wa} target="_blank" rel="noopener"><Icon name="whatsapp" /> WhatsApp</a>
+        </div>
+      </div>
+
+      <aside class="shop-card">
+        <h2>La boutique</h2>
+        <ul>
+          <li>
+            <Icon name="pin" />
+            <div>
+              <p>{settings.address}</p>
+              {mapsUrl && <a class="link-arrow" href={mapsUrl} target="_blank" rel="noopener">Itinéraire</a>}
+            </div>
+          </li>
+          <li><Icon name="phone" /><a href={telLink(settings.phone)}>{displayPhone(settings.phone)}</a></li>
+          <li><Icon name="whatsapp" /><a href={wa} target="_blank" rel="noopener">Écrire sur WhatsApp</a></li>
+          {settings.email && <li><Icon name="arrow" /><a href={`mailto:${settings.email}`}>{settings.email}</a></li>}
+          {settings.hours.length > 0 && (
+            <li>
+              <Icon name="clock" />
+              <dl class="hours-list">{settings.hours.map((h) => (<><dt>{h.day}</dt><dd>{h.value}</dd></>))}</dl>
+            </li>
+          )}
+          {settings.instagram && <li><Icon name="instagram" /><a href={ensureHttps(settings.instagram)} target="_blank" rel="noopener">Suivez-nous sur Instagram</a></li>}
+        </ul>
+      </aside>
+    </div>
+  </section>
+</Base>
+
+<script define:vars={{ url: SUPABASE_URL, key: SUPABASE_KEY, wa }}>
+  const form = document.querySelector('[data-rdv-form]');
+  const success = document.querySelector('[data-success]');
+  const errorBox = form.querySelector('[data-error]');
+  const submit = form.querySelector('[data-submit]');
+
+  // Date minimale : aujourd'hui. Modèle pré-rempli depuis une fiche produit (?modele=…).
+  const today = new Date();
+  form.preferred_date.min = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const model = new URLSearchParams(location.search).get('modele');
+  if (model && form.product_handle && [...form.product_handle.options].some((o) => o.value === model)) {
+    form.product_handle.value = model;
+    form.reason.value = 'Essayage de montures';
+  }
+
+  const fail = (message) => {
+    errorBox.textContent = message;
+    errorBox.hidden = false;
+  };
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    errorBox.hidden = true;
+    const data = Object.fromEntries(new FormData(form));
+    if (data.website) return; // robot
+
+    const name = String(data.full_name || '').trim();
+    const phone = String(data.phone || '').trim();
+    if (name.length < 2) return fail('Merci d’indiquer votre nom.'), form.full_name.focus();
+    if (phone.replace(/\D/g, '').length < 6) return fail('Merci d’indiquer un numéro de téléphone valide.'), form.phone.focus();
+
+    const payload = {
+      full_name: name,
+      phone,
+      reason: data.reason || null,
+      preferred_date: data.preferred_date || null,
+      preferred_slot: data.preferred_slot || null,
+      product_handle: data.product_handle || null,
+      message: String(data.message || '').trim() || null,
+    };
+
+    submit.disabled = true;
+    submit.textContent = 'Envoi…';
+    try {
+      const res = await fetch(`${url}/rest/v1/appointments`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      form.hidden = true;
+      success.hidden = false;
+      success.focus();
+    } catch {
+      fail('L’envoi n’a pas abouti. Réessayez dans un instant, ou écrivez-nous directement sur WhatsApp.');
+      submit.disabled = false;
+      submit.textContent = 'Envoyer ma demande';
+    }
+  });
+</script>
+
+<style is:global>
+  .contact-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: clamp(24px, 4vw, 56px); align-items: start; }
+  .rdv-card { background: var(--white); border: 1px solid var(--line); padding: clamp(24px, 4vw, 48px); scroll-margin-top: 96px; }
+  .rdv-card h2 { font-size: clamp(1.8rem, 3vw, 2.4rem); margin-bottom: 1.6rem; }
+  .rdv-form { display: grid; gap: 1.1rem; }
+  .rdv-form .field { display: grid; gap: .4rem; }
+  .rdv-form .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .rdv-form label { font-size: .72rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); }
+  .rdv-form input, .rdv-form select, .rdv-form textarea {
+    width: 100%; min-height: 50px; padding: .75em .9em; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper);
+  }
+  .rdv-form textarea { resize: vertical; }
+  .rdv-form input:focus, .rdv-form select:focus, .rdv-form textarea:focus { outline: none; border-color: var(--ink); background: #fff; }
+  .rdv-form .btn { justify-self: start; }
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .form-error { margin: 0; padding: .8rem 1rem; background: #fdecea; color: #a52a1f; }
+  .form-note { margin: 0; font-size: .85rem; }
+  .form-success { display: grid; gap: 1rem; justify-items: start; }
+  .form-success p { margin: 0; color: var(--ink-soft); }
+  .shop-card { background: var(--ink); color: #fff; padding: clamp(24px, 4vw, 48px); position: sticky; top: 96px; }
+  .shop-card h2 { font-size: clamp(1.8rem, 3vw, 2.4rem); margin-bottom: 1.6rem; }
+  .shop-card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.3rem; }
+  .shop-card li { display: grid; grid-template-columns: 22px 1fr; gap: .9rem; align-items: start; }
+  .shop-card li > svg { width: 22px; height: 22px; color: #7fc0e6; margin-top: 2px; }
+  .shop-card p { margin: 0 0 .6rem; }
+  .shop-card a { text-decoration: none; }
+  .shop-card a:not(.link-arrow) { border-bottom: 1px solid rgb(255 255 255 / .3); }
+  .shop-card .hours-list dt { color: #aebbc6; }
+  @media (max-width: 900px) {
+    .contact-grid { grid-template-columns: 1fr; }
+    .shop-card { position: static; }
+  }
+  @media (max-width: 480px) { .rdv-form .field-row { grid-template-columns: 1fr; } }
+</style>

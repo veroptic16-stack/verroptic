@@ -1,0 +1,31 @@
+---
+import { responsiveImage } from '../lib/images';
+import Icon from './Icon.astro';
+
+interface Props {
+  path?: string | null;
+  alt: string;
+  width: number; // largeur d'affichage max (px)
+  sizes: string;
+  eager?: boolean;
+  class?: string;
+}
+const { path, alt, width, sizes, eager = false, class: className } = Astro.props;
+const img = path ? await responsiveImage(path, width) : null;
+---
+{img ? (
+  <img
+    class={className}
+    src={img.src}
+    srcset={img.srcset || undefined}
+    sizes={img.srcset ? sizes : undefined}
+    width={img.width}
+    height={img.height}
+    alt={alt}
+    loading={eager ? 'eager' : 'lazy'}
+    fetchpriority={eager ? 'high' : undefined}
+    decoding="async"
+  />
+) : (
+  <Icon name="glasses" class="placeholder" />
+)}

@@ -9,6 +9,7 @@ const FIELDS: { title: string; fields: SettingField[] }[] = [
     fields: [
       { name: 'name', label: 'Nom' },
       { name: 'tagline', label: 'Accroche', placeholder: 'ex. Opticien à Casablanca' },
+      { name: 'about', label: 'Présentation de la boutique (page d’accueil)', type: 'textarea', help: 'Quelques phrases sur l’histoire, l’équipe, le savoir-faire.' },
       { name: 'address', label: 'Adresse', type: 'textarea' },
       { name: 'google_maps_url', label: 'Lien Google Maps', type: 'url' },
     ],

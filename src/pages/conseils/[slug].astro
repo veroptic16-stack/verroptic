@@ -1,0 +1,85 @@
+---
+import Base from '../../layouts/Base.astro';
+import Photo from '../../components/Photo.astro';
+import Icon from '../../components/Icon.astro';
+import { getArticles, getSettings, type Article } from '../../lib/content';
+import { renderMarkdown } from '../../lib/markdown';
+import { whatsappLink } from '../../lib/links';
+
+export async function getStaticPaths() {
+  const articles = await getArticles();
+  return articles.map((article) => ({ params: { slug: article.slug }, props: { article } }));
+}
+
+const { article: a } = Astro.props as { article: Article };
+const [settings, articles] = await Promise.all([getSettings(), getArticles()]);
+const others = articles.filter((x) => x.id !== a.id).slice(0, 3);
+const date = a.published_at ? new Date(a.published_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+const wa = whatsappLink(settings.whatsapp, `Bonjour VER'OPTIC, j'ai lu votre article « ${a.title} » et j'ai une question : `);
+---
+<Base title={a.title} description={a.excerpt || `${a.title} : un conseil de ${settings.name}, opticien à Casablanca.`}>
+  <article class="article">
+    <header class="container article-head">
+      <ol class="breadcrumb">
+        <li><a href="/">Accueil</a></li>
+        <li><a href="/conseils/">Conseils</a></li>
+        <li aria-current="page">{a.title}</li>
+      </ol>
+      {date && <time class="eyebrow" datetime={a.published_at}>{date}</time>}
+      <h1>{a.title}</h1>
+      {a.excerpt && <p class="lead">{a.excerpt}</p>}
+    </header>
+    {a.cover_path && (
+      <div class="container">
+        <div class="frame article-cover">
+          <Photo path={a.cover_path} alt="" width={1200} sizes="(max-width: 1240px) 100vw, 1200px" eager />
+        </div>
+      </div>
+    )}
+    <div class="container article-body">
+      <div class="prose" set:html={renderMarkdown(a.body)} />
+      <aside class="article-aside">
+        <p>Une question sur ce sujet ? Nos opticiens vous répondent.</p>
+        <a class="btn btn-wa" href={wa} target="_blank" rel="noopener"><Icon name="whatsapp" /> Poser ma question</a>
+      </aside>
+    </div>
+  </article>
+
+  {others.length > 0 && (
+    <section class="section related">
+      <div class="container">
+        <div class="section-head">
+          <h2>À lire <em>aussi</em></h2>
+          <a class="link-arrow" href="/conseils/">Tous les conseils</a>
+        </div>
+        <div class="journal-grid">
+          {others.map((o) => (
+            <a class="journal-card" href={`/conseils/${o.slug}/`}>
+              <div class="frame journal-media"><Photo path={o.cover_path} alt="" width={420} sizes="(max-width: 860px) 100vw, 33vw" /></div>
+              <h3>{o.title}</h3>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+</Base>
+
+<style is:global>
+  .article-head { padding-block: clamp(40px, 6vw, 80px) clamp(28px, 4vw, 48px); max-width: 860px; }
+  .article-head h1 { font-size: clamp(2.4rem, 5vw, 4rem); }
+  .article-head .lead { margin-top: 1.2rem; }
+  .article-cover { aspect-ratio: 16 / 8; background: var(--mist); }
+  .article-body { display: grid; grid-template-columns: minmax(0, 42rem) 1fr; gap: clamp(32px, 6vw, 96px); padding-block: clamp(40px, 6vw, 80px); }
+  .article-aside { align-self: start; position: sticky; top: 110px; padding: 1.8rem; background: var(--white); border: 1px solid var(--line); display: grid; gap: 1rem; justify-items: start; }
+  .article-aside p { margin: 0; font-family: var(--serif); font-size: 1.4rem; line-height: 1.25; }
+  .related { background: var(--white); }
+  .journal-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2vw, 32px); }
+  .journal-card { text-decoration: none; display: grid; gap: 1rem; align-content: start; }
+  .journal-media { aspect-ratio: 4 / 3; background: var(--mist); }
+  @media (max-width: 860px) {
+    .article-body { grid-template-columns: 1fr; }
+    .article-aside { position: static; }
+    .journal-grid { grid-template-columns: 1fr; }
+  }
+</style>

@@ -1,0 +1,26 @@
+---
+import Base from '../../layouts/Base.astro';
+import Catalog from '../../components/Catalog.astro';
+import { getProducts, getSettings, getCategories } from '../../lib/content';
+
+const [products, settings, categories] = await Promise.all([getProducts(), getSettings(), getCategories()]);
+---
+<Base title="Collections" description={`Toutes les montures optiques et solaires de ${settings.name}, opticien à Casablanca.`}>
+  <section class="page-head">
+    <div class="container">
+      <span class="eyebrow">Collections</span>
+      <h1>Toutes nos <em>montures</em></h1>
+      <p class="lead">Optique, solaire, clip-on : parcourez notre sélection, puis venez l’essayer en boutique.</p>
+      {categories.length > 0 && (
+        <ul class="category-pills">
+          {categories.map((c) => <li><a href={`/collections/${c.slug}/`}>{c.name}</a></li>)}
+        </ul>
+      )}
+    </div>
+  </section>
+  <section class="section tight" style="padding-top:0">
+    <div class="container">
+      <Catalog products={products} whatsapp={settings.whatsapp} showCategoryFilter />
+    </div>
+  </section>
+</Base>
