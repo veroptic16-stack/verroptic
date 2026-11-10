@@ -3,7 +3,7 @@
 // Si Supabase est indisponible, le site se construit quand même (catalogue vide, réglages par défaut).
 import { supabase } from './supabase';
 import fallbackConfig from '../data/config.json';
-import { demoProducts } from '../data/demo';
+import { demoProducts, demoArticles } from '../data/demo';
 
 export type Hours = { day: string; value: string };
 export type Settings = typeof fallbackConfig & { hours: Hours[] };
@@ -109,8 +109,8 @@ export function getServices(): Promise<Service[]> {
   return load('services', () => supabase.from('services').select('id, slug, title, summary, body, cover_path').eq('is_published', true).order('sort_order'), []);
 }
 
-export function getArticles(): Promise<Article[]> {
-  return load(
+export async function getArticles(): Promise<Article[]> {
+  const articles = await load<Article[]>(
     'articles',
     () =>
       supabase
@@ -120,6 +120,7 @@ export function getArticles(): Promise<Article[]> {
         .order('published_at', { ascending: false, nullsFirst: false }),
     [],
   );
+  return articles.length || !DEMO ? articles : demoArticles;
 }
 
 export const GENDER_LABELS: Record<string, string> = { femme: 'Femme', homme: 'Homme', mixte: 'Mixte', enfant: 'Enfant' };

@@ -1,59 +1,171 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Photo from '../../components/Photo.astro';
+import Icon from '../../components/Icon.astro';
 import { getArticles, getSettings } from '../../lib/content';
+import { ensureHttps, whatsappLink } from '../../lib/links';
 
 const [articles, settings] = await Promise.all([getArticles(), getSettings()]);
+const [featured, ...others] = articles;
 const formatDate = (d: string | null) => (d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '');
+const pad = (n: number) => String(n).padStart(2, '0');
+const wa = whatsappLink(settings.whatsapp, `Bonjour VER'OPTIC, j'ai une question : `);
+const instagram = ensureHttps(settings.instagram);
 ---
 <Base title="Conseils" description={`Conseils d’opticien par ${settings.name} : santé des yeux, choix des lunettes, verres et lentilles.`}>
-  <section class="page-head">
-    <div class="container">
-      <span class="eyebrow">Conseils</span>
-      <h1>Le journal <em>de vos yeux</em></h1>
-      <p class="lead">Santé visuelle, choix de la monture, entretien : nos conseils d’opticien, simplement.</p>
+  <section class="journal-head">
+    <div class="container journal-head-grid">
+      <div>
+        <span class="eyebrow">Le journal</span>
+        <h1>Conseils <em>d’opticien</em></h1>
+        <p class="lead">Santé visuelle, choix de la monture, verres, lentilles, entretien : l’essentiel, expliqué simplement.</p>
+      </div>
+      <aside class="ask-card">
+        <p>Une question précise sur vos yeux ou vos lunettes ?</p>
+        <a class="btn btn-wa" href={wa} target="_blank" rel="noopener"><Icon name="whatsapp" /> Posez-la-nous</a>
+      </aside>
     </div>
   </section>
 
-  <section class="section tight" style="padding-top:0">
-    <div class="container">
-      {articles.length === 0 ? (
-        <div class="empty">
-          <h2>Premiers articles bientôt</h2>
-          <p>Nos conseils arrivent. En attendant, retrouvez-les sur notre Instagram.</p>
-          <div class="btn-row"><a class="btn btn-outline" href="/collections/">Voir les collections</a></div>
-        </div>
-      ) : (
-        <div class="journal-grid">
-          {articles.map((a, i) => (
-            <a class={`journal-card reveal ${i === 0 ? 'lead-card' : ''}`} href={`/conseils/${a.slug}/`}>
-              <div class="frame journal-media">
-                <Photo path={a.cover_path} alt="" width={i === 0 ? 760 : 420} sizes="(max-width: 760px) 100vw, 40vw" eager={i === 0} />
-              </div>
-              <div>
-                {a.published_at && <time class="muted" datetime={a.published_at}>{formatDate(a.published_at)}</time>}
-                <h2>{a.title}</h2>
-                {a.excerpt && <p class="muted">{a.excerpt}</p>}
-              </div>
-            </a>
-          ))}
-        </div>
+  {featured ? (
+    <>
+      <!-- À la une -->
+      <section class="container">
+        <a class="feature reveal" href={`/conseils/${featured.slug}/`}>
+          <div class={`feature-media ${featured.cover_path ? '' : 'cover-typo'}`}>
+            {featured.cover_path ? (
+              <Photo path={featured.cover_path} alt="" width={820} sizes="(max-width: 860px) 100vw, 58vw" eager />
+            ) : (
+              <Icon name="glasses" class="typo-icon" />
+            )}
+          </div>
+          <div class="feature-text">
+            <span class="feature-meta"><span class="tag">À la une</span>{featured.published_at && <time datetime={featured.published_at}>{formatDate(featured.published_at)}</time>}</span>
+            <h2>{featured.title}</h2>
+            {featured.excerpt && <p>{featured.excerpt}</p>}
+            <span class="link-arrow">Lire l’article</span>
+          </div>
+        </a>
+      </section>
+
+      <!-- Index des articles -->
+      {others.length > 0 && (
+        <section class="section">
+          <div class="container">
+            <h2 class="index-title">Tous les conseils</h2>
+            <ol class="article-index">
+              {others.map((a, i) => (
+                <li class="reveal">
+                  <a href={`/conseils/${a.slug}/`}>
+                    <span class="index-num">{pad(i + 2)}</span>
+                    <span class="index-body">
+                      <span class="index-heading">{a.title}</span>
+                      {a.excerpt && <span class="index-excerpt">{a.excerpt}</span>}
+                    </span>
+                    {a.published_at && <time class="index-date" datetime={a.published_at}>{formatDate(a.published_at)}</time>}
+                    <span class={`index-thumb ${a.cover_path ? '' : 'cover-typo'}`}>
+                      {a.cover_path ? <Photo path={a.cover_path} alt="" width={200} sizes="160px" /> : <Icon name="glasses" class="typo-icon" />}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
       )}
-    </div>
-  </section>
+    </>
+  ) : (
+    <section class="container">
+      <div class="journal-empty">
+        <Icon name="glasses" class="journal-empty-icon" />
+        <h2>Nos premiers conseils <em>arrivent</em></h2>
+        <p>En attendant, retrouvez nos astuces sur Instagram, ou posez-nous directement votre question.</p>
+        <div class="btn-row">
+          {instagram && <a class="btn" href={instagram} target="_blank" rel="noopener"><Icon name="instagram" /> Instagram</a>}
+          <a class="btn btn-outline" href={wa} target="_blank" rel="noopener"><Icon name="whatsapp" /> WhatsApp</a>
+        </div>
+      </div>
+    </section>
+  )}
+
+  {instagram && featured && (
+    <section class="section insta-band">
+      <div class="container insta-grid">
+        <div>
+          <span class="eyebrow">Instagram</span>
+          <h2>Encore plus d’astuces, <em>chaque semaine</em></h2>
+        </div>
+        <a class="btn btn-outline" href={instagram} target="_blank" rel="noopener"><Icon name="instagram" /> Suivre @verroptic</a>
+      </div>
+    </section>
+  )}
 </Base>
 
 <style is:global>
-  .journal-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(24px, 3vw, 40px) clamp(16px, 2vw, 32px); }
-  .journal-card { text-decoration: none; display: grid; gap: 1rem; align-content: start; }
-  .journal-card h2 { font-size: clamp(1.4rem, 2vw, 1.75rem); margin: .3rem 0 .5rem; }
-  .journal-card time { font-size: .8rem; }
-  .journal-card p { margin: 0; }
-  .journal-media { aspect-ratio: 4 / 3; background: var(--mist); }
-  .journal-card.lead-card { grid-column: 1 / -1; grid-template-columns: 1.3fr 1fr; gap: clamp(24px, 4vw, 56px); align-items: center; }
-  .journal-card.lead-card h2 { font-size: clamp(2rem, 3.6vw, 3rem); }
+  .journal-head { padding-block: clamp(48px, 7vw, 96px) clamp(32px, 4vw, 56px); }
+  .journal-head-grid { display: grid; grid-template-columns: 1fr auto; gap: 2rem 4rem; align-items: end; }
+  .journal-head .lead { margin: 1.2rem 0 0; }
+  .ask-card { width: 300px; padding: 1.6rem; background: var(--ink); color: #fff; display: grid; gap: 1rem; }
+  .ask-card p { margin: 0; font-family: var(--serif); font-size: 1.45rem; line-height: 1.25; }
+
+  /* Couverture typographique quand l'article n'a pas d'image */
+  .cover-typo { background: linear-gradient(135deg, var(--mist), #dce9f2); display: grid; place-items: center; overflow: hidden; }
+
+  .feature { display: grid; grid-template-columns: 1.35fr 1fr; background: var(--white); border: 1px solid var(--line); text-decoration: none; }
+  .feature-media { aspect-ratio: 4 / 3; overflow: hidden; }
+  .feature-media img { width: 100%; height: 100%; object-fit: cover; transition: transform .9s var(--ease); }
+  .feature:hover .feature-media img { transform: scale(1.03); }
+  .cover-typo .typo-icon { width: 42%; color: var(--blue-deep); opacity: .35; }
+  .feature-text { padding: clamp(28px, 4vw, 56px); display: grid; align-content: center; gap: 1.1rem; }
+  .feature-text h2 { font-size: clamp(2rem, 3.4vw, 3rem); }
+  .feature-text p { margin: 0; color: var(--ink-soft); }
+  .feature-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; font-size: .85rem; color: var(--muted); }
+  .tag { padding: .3em .7em; background: var(--blue); color: #fff; font-size: .65rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+  .feature .link-arrow { justify-self: start; margin-top: .4rem; }
+
+  .index-title { font-size: clamp(1.8rem, 3vw, 2.4rem); margin-bottom: 1.5rem; }
+  .article-index { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ink); }
+  .article-index li { border-bottom: 1px solid var(--line); }
+  .article-index a {
+    display: grid; grid-template-columns: 64px 1fr 170px 160px; gap: 1.5rem; align-items: center;
+    padding: 1.6rem .5rem; text-decoration: none; transition: background .3s var(--ease), padding .3s var(--ease);
+  }
+  .article-index a:hover { background: var(--white); padding-inline: 1.2rem; }
+  .index-num { font-family: var(--serif); font-size: 1.5rem; color: var(--blue); }
+  .index-body { display: grid; gap: .35rem; }
+  .index-heading { font-family: var(--serif); font-size: clamp(1.4rem, 2.2vw, 1.9rem); line-height: 1.15; }
+  .index-excerpt { color: var(--muted); font-size: .95rem; }
+  .index-date { font-size: .8rem; color: var(--muted); text-align: right; }
+  .index-thumb { width: 160px; aspect-ratio: 4 / 3; overflow: hidden; }
+  .index-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+  .journal-empty { padding: clamp(40px, 7vw, 96px) clamp(20px, 5vw, 64px); background: var(--white); border: 1px solid var(--line); text-align: center; display: grid; justify-items: center; gap: 1rem; margin-bottom: var(--section); }
+  .journal-empty-icon { width: 110px; color: var(--blue); }
+  .journal-empty h2 { font-size: clamp(2rem, 4vw, 3rem); }
+  .journal-empty p { max-width: 30em; margin: 0 0 .5rem; color: var(--ink-soft); }
+  .journal-empty .btn-row { justify-content: center; }
+
+  .insta-band { background: var(--mist); }
+  .insta-grid { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1.5rem; }
+
   @media (max-width: 860px) {
-    .journal-grid { grid-template-columns: 1fr; }
-    .journal-card.lead-card { grid-template-columns: 1fr; }
+    .journal-head-grid { grid-template-columns: 1fr; }
+    .ask-card { width: auto; }
+    .feature { grid-template-columns: 1fr; }
+    .article-index a { grid-template-columns: 1fr 96px; grid-template-areas: 'body thumb' 'date thumb'; gap: .4rem 1rem; padding: 1.2rem 0; }
+    .article-index a:hover { padding-inline: 0; background: none; }
+    .index-num { display: none; }
+    .index-body { grid-area: body; }
+    .index-date { grid-area: date; text-align: left; }
+    .index-thumb { grid-area: thumb; width: 96px; align-self: start; }
+    .index-excerpt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  }
+  @media (max-width: 600px) {
+    .journal-head { padding-block: 32px 24px; }
+    .ask-card { padding: 1.2rem; }
+    .ask-card p { font-size: 1.25rem; }
+    .feature { margin-inline: calc(-1 * var(--gutter)); border-inline: 0; }
+    .feature-text { padding: 24px var(--gutter) 28px; }
+    .insta-grid .btn { flex: 1 1 100%; }
   }
 </style>
