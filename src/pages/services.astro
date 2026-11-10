@@ -16,7 +16,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
     <div class="container">
       <span class="eyebrow">Services</span>
       <h1>L’expertise <em>derrière chaque paire</em></h1>
-      <p class="lead">De l’essayage au choix des verres, nous vous accompagnons à chaque étape. <span class="hint-hover">Survolez une carte pour en savoir plus.</span><span class="hint-touch">Touchez une carte pour en savoir plus.</span></p>
+      <p class="lead">De l’essayage au choix des verres, nous vous accompagnons à chaque étape.</p>
     </div>
   </section>
 
@@ -117,8 +117,6 @@ const pad = (n: number) => String(n).padStart(2, '0');
 </script>
 
 <style is:global>
-  .hint-touch { display: none; }
-  @media (hover: none) { .hint-hover { display: none; } .hint-touch { display: inline; } }
 
   .flip-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2vw, 28px); }
   @media (max-width: 1080px) { .flip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -41,12 +41,12 @@ const promises = [
   <section class="hero">
     <div class="container hero-grid">
       <div class="hero-text">
-        <span class="eyebrow">{settings.tagline}</span>
+        <span class="eyebrow">Essayage personnalisé · Sidi Bernoussi</span>
         <h1>Voir juste,<br /><em>porter beau.</em></h1>
-        <p class="lead">Des montures de caractère, des verres pensés pour vos yeux et un conseil qui prend le temps. Bienvenue chez {settings.name}.</p>
+        <p class="lead">Réservez votre créneau : nous préparons une sélection de montures adaptées à votre visage, à votre style et à votre vue. <strong>Vous n’avez plus qu’à essayer.</strong></p>
         <div class="btn-row">
-          <a class="btn" href="/collections/">Découvrir les collections</a>
-          <a class="btn btn-outline" href="/contact/#rdv">Prendre rendez-vous</a>
+          <a class="btn" href="/contact/#rdv">Réserver mon essayage</a>
+          <a class="btn btn-outline" href="/collections/">Voir les collections</a>
         </div>
       </div>
       <div class="hero-visual">
@@ -240,6 +240,7 @@ const promises = [
   .hero { padding-block: clamp(32px, 6vw, 88px) clamp(48px, 7vw, 104px); overflow: hidden; }
   .hero-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: clamp(32px, 5vw, 80px); align-items: center; }
   .hero-text .lead { margin: 1.6rem 0 2.2rem; }
+  .hero-text .lead strong { color: var(--ink); font-weight: 600; }
   .hero-visual { position: relative; display: grid; place-items: center; min-height: clamp(320px, 42vw, 560px); }
   .hero-disc { position: absolute; left: 50%; top: 50%; width: min(96%, 560px); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff 0%, var(--mist) 55%, #dbe8f1 100%); }
   .hero-product { position: relative; width: min(84%, 520px); text-decoration: none; display: grid; gap: 1rem; justify-items: center; }
