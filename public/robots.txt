@@ -1,0 +1,4 @@
+# Phase de développement : aucune indexation.
+# À remplacer au lancement (Phase 3) par la version publique + sitemap.
+User-agent: *
+Disallow: /

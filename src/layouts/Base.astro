@@ -1,0 +1,21 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description = "VER'OPTIC, opticien à Casablanca." } = Astro.props;
+---
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Phase de développement : à retirer au lancement -->
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

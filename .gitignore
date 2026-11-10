@@ -1,0 +1,14 @@
+# dépendances et build
+node_modules/
+dist/
+.astro/
+
+# variables d'environnement (ne jamais committer)
+.env
+.env.*
+!.env.example
+
+# système / éditeurs
+.DS_Store
+.vscode/
+.vercel/
