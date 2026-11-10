@@ -40,3 +40,6 @@ grant execute on function public.publish_site() to authenticated;
 
 create policy "media_admin_select" on storage.objects for select to authenticated
   using (bucket_id = 'media' and public.is_admin());
+
+-- Recharge le cache de l'API pour que la fonction soit visible immédiatement.
+notify pgrst, 'reload schema';

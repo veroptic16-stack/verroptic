@@ -73,7 +73,9 @@ async function publish(button: HTMLButtonElement) {
   const { error } = await supabase.rpc('publish_site');
   if (error) {
     button.disabled = false;
-    if (/deploy hook/i.test(error.message)) return toast('La publication n’est pas encore configurée.', 'error');
+    if (error.code === 'PGRST202' || /deploy hook/i.test(error.message)) {
+      return toast('La publication n’est pas encore configurée.', 'error');
+    }
     return handleError(error);
   }
   toast('Publication lancée ✓ Le site sera à jour dans 1 à 2 minutes.');
